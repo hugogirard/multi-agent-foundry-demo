@@ -1,0 +1,8 @@
+name: azd-foundry-multi-agent
+metadata:
+  template: azd-starter-bicep
+
+hooks:
+  postprovision:
+    shell: pwsh
+    run: scripts/postprovision.ps1

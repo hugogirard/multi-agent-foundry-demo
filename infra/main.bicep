@@ -1,0 +1,115 @@
+targetScope = 'subscription'
+
+@minLength(1)
+@maxLength(64)
+@description('Name of the the environment which is used to generate a short unique hash used in all resources.')
+param environmentName string
+
+@minLength(1)
+@description('Primary location for all resources')
+param location string
+
+param resourceGroupName string
+
+var abbrs = loadJsonContent('./abbreviations.json')
+
+// tags that should be applied to all resources.
+var tags = {
+  // Tag all resources with the environment name.
+  'azd-env-name': environmentName
+  SecurityControl: 'Ignore'
+}
+
+// Virtual Networks configuration
+var virtualNetworkConfig = {
+  addressPrefix: '192.168.0.0/16'
+  agentSubnetAddressPrefix: '192.168.1.0/24'
+}
+
+#disable-next-line no-unused-vars
+var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
+
+// Organize resources in a resource group
+resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: resourceGroupName
+  location: location
+  tags: tags
+}
+
+module virtualNetwork 'core/networking/vnet.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    vnetResourceName: '${abbrs.networkVirtualNetworks}${resourceToken}'
+    agentSubnetAddressPrefix: virtualNetworkConfig.agentSubnetAddressPrefix
+    vnetAddressPrefix: virtualNetworkConfig.addressPrefix
+    tags: tags
+  }
+}
+
+module monitoring 'core/monitoring/logging.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    logAnalyticResourceName: '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+  }
+}
+
+// Foundry
+
+module foundryIdentity 'core/identity/user.assigned.identity.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}foundry-${resourceToken}'
+    tags: tags
+  }
+}
+
+module foundryDependencies 'core/ai/foundry-dependencies.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    storageResourceName: '${abbrs.storageStorageAccounts}${resourceToken}'
+    cosmosDbResouceName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+    aiSearchResourceName: '${abbrs.searchSearchServices}${resourceToken}'
+  }
+}
+
+// Assign all the RBAC roles to foundry
+
+module foundry 'core/ai/foundry.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    foundryResourceName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    subnetAgentResourceId: virtualNetwork.outputs.subnetAgentResourceId
+    aiSearchResourceName: foundryDependencies.outputs.aiSearchResourceName
+    cosmosResourceName: foundryDependencies.outputs.cosmosdbResourceName
+    storageResourceName: foundryDependencies.outputs.storageResourceName
+  }
+}
+
+module foundryRbac 'core/rbac/foundry.bicep' = {
+  scope: rg
+  params: {
+    foundryAccountPrincipalId: foundry.outputs.foundryIdentityPrincipalId
+    projectPrincipalId: foundry.outputs.projectPrincipalId
+    storageAccountName: foundryDependencies.outputs.storageResourceName
+    cosmosDbAccountName: foundryDependencies.outputs.cosmosdbResourceName
+    aiSearchName: foundryDependencies.outputs.aiSearchResourceName
+  }
+}
+
+// To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
+// output AZURE_LOCATION string = location
+// output AZURE_TENANT_ID string = tenant().tenantId
+output VIRTUAL_NETWORK_RESOURCE_NAME string = virtualNetwork.outputs.virtualNetworkResourceName
+output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
+output PROJECT_NAME string = foundry.outputs.projectName
+output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
+output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
+output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName

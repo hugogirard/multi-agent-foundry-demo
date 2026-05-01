@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "11156324644080780785"
+    }
+  },
+  "parameters": {
+    "foundryResourceName": {
+      "type": "string"
+    },
+    "projectName": {
+      "type": "string"
+    },
+    "connectionSearchName": {
+      "type": "string"
+    },
+    "connectionCosmosName": {
+      "type": "string"
+    },
+    "connectionStorageName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts/projects/capabilityHosts",
+      "apiVersion": "2026-01-15-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('foundryResourceName'), parameters('projectName'), 'project-capability-host')]",
+      "properties": {
+        "capabilityHostKind": "Agents",
+        "vectorStoreConnections": [
+          "[parameters('connectionSearchName')]"
+        ],
+        "storageConnections": [
+          "[parameters('connectionStorageName')]"
+        ],
+        "threadStorageConnections": [
+          "[parameters('connectionCosmosName')]"
+        ]
+      }
+    }
+  ]
+}
