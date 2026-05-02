@@ -56,60 +56,72 @@ module monitoring 'core/monitoring/logging.bicep' = {
   }
 }
 
+// Resources for MCP server and other workload
+module db 'core/database/cosmos.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    resourceName: '${abbrs.documentDBDatabaseAccounts}work${resourceToken}'
+  }
+}
+
 // Foundry
 
-module foundryIdentity 'core/identity/user.assigned.identity.bicep' = {
-  scope: rg
-  params: {
-    location: location
-    identityName: '${abbrs.managedIdentityUserAssignedIdentities}foundry-${resourceToken}'
-    tags: tags
-  }
-}
+// module foundryIdentity 'core/identity/user.assigned.identity.bicep' = {
+//   scope: rg
+//   params: {
+//     location: location
+//     identityName: '${abbrs.managedIdentityUserAssignedIdentities}foundry-${resourceToken}'
+//     tags: tags
+//   }
+// }
 
-module foundryDependencies 'core/ai/foundry-dependencies.bicep' = {
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    storageResourceName: '${abbrs.storageStorageAccounts}${resourceToken}'
-    cosmosDbResouceName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
-    aiSearchResourceName: '${abbrs.searchSearchServices}${resourceToken}'
-  }
-}
+// module foundryDependencies 'core/ai/foundry-dependencies.bicep' = {
+//   scope: rg
+//   params: {
+//     location: location
+//     tags: tags
+//     storageResourceName: '${abbrs.storageStorageAccounts}${resourceToken}'
+//     cosmosDbResouceName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+//     aiSearchResourceName: '${abbrs.searchSearchServices}${resourceToken}'
+//   }
+// }
 
 // Assign all the RBAC roles to foundry
 
-module foundry 'core/ai/foundry.bicep' = {
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    foundryResourceName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
-    subnetAgentResourceId: virtualNetwork.outputs.subnetAgentResourceId
-    aiSearchResourceName: foundryDependencies.outputs.aiSearchResourceName
-    cosmosResourceName: foundryDependencies.outputs.cosmosdbResourceName
-    storageResourceName: foundryDependencies.outputs.storageResourceName
-  }
-}
+// module foundry 'core/ai/foundry.bicep' = {
+//   scope: rg
+//   params: {
+//     location: location
+//     tags: tags
+//     foundryResourceName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+//     subnetAgentResourceId: virtualNetwork.outputs.subnetAgentResourceId
+//     aiSearchResourceName: foundryDependencies.outputs.aiSearchResourceName
+//     cosmosResourceName: foundryDependencies.outputs.cosmosdbResourceName
+//     storageResourceName: foundryDependencies.outputs.storageResourceName
+//   }
+// }
 
-module foundryRbac 'core/rbac/foundry.bicep' = {
-  scope: rg
-  params: {
-    foundryAccountPrincipalId: foundry.outputs.foundryIdentityPrincipalId
-    projectPrincipalId: foundry.outputs.projectPrincipalId
-    storageAccountName: foundryDependencies.outputs.storageResourceName
-    cosmosDbAccountName: foundryDependencies.outputs.cosmosdbResourceName
-    aiSearchName: foundryDependencies.outputs.aiSearchResourceName
-  }
-}
+// module foundryRbac 'core/rbac/foundry.bicep' = {
+//   scope: rg
+//   params: {
+//     foundryAccountPrincipalId: foundry.outputs.foundryIdentityPrincipalId
+//     projectPrincipalId: foundry.outputs.projectPrincipalId
+//     storageAccountName: foundryDependencies.outputs.storageResourceName
+//     cosmosDbAccountName: foundryDependencies.outputs.cosmosdbResourceName
+//     aiSearchName: foundryDependencies.outputs.aiSearchResourceName
+//   }
+// }
 
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 // output AZURE_LOCATION string = location
 // output AZURE_TENANT_ID string = tenant().tenantId
 output VIRTUAL_NETWORK_RESOURCE_NAME string = virtualNetwork.outputs.virtualNetworkResourceName
-output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
-output PROJECT_NAME string = foundry.outputs.projectName
-output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
-output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
-output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName
+output COSMOS_DB_NAME string = db.outputs.resourceName
+output COSMOS_DB_ENPPOINT string = db.outputs.endpoint
+// output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
+// output PROJECT_NAME string = foundry.outputs.projectName
+// output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
+// output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
+// output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName

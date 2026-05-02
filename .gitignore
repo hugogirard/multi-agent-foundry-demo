@@ -1,2 +1,5 @@
 .azure
 cleanup-resource-groups.ps1
+.env
+__pycache__
+.venv

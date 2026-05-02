@@ -4,5 +4,7 @@ metadata:
 
 hooks:
   postprovision:
-    shell: pwsh
-    run: scripts/postprovision.ps1
+    # - shell: pwsh
+    #   run: scripts/postprovision.ps1
+    - shell: pwsh
+      run: scripts/load-data.ps1
