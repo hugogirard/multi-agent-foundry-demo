@@ -57,12 +57,94 @@ module monitoring 'core/monitoring/logging.bicep' = {
 }
 
 // Resources for MCP server and other workload
+
 module db 'core/database/cosmos.bicep' = {
   scope: rg
   params: {
     location: location
     tags: tags
     resourceName: '${abbrs.documentDBDatabaseAccounts}work${resourceToken}'
+  }
+}
+
+module containerRegistry 'core/registry/acr.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    resourceName: '${abbrs.containerRegistryRegistries}${resourceToken}'
+  }
+}
+
+module webapp 'core/webapp/workload.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    appServicePlanResourceName: '${abbrs.webServerFarms}${resourceToken}'
+    containerRegistryName: containerRegistry.outputs.resourceName
+    mcpFlightServerName: '${abbrs.webSitesAppService}mcp-fligh-server-${resourceToken}'
+    clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
+    tags: tags
+  }
+}
+
+var requiredResourceAccess = [
+  {
+    // MS Graph well-known application ID
+    resourceAppId: '00000003-0000-0000-c000-000000000000'
+    resourceAccess: [
+      {
+        // Well-known permission ID for User.Read delegated scope
+        id: 'e1fe6dd8-ba31-4d61-89e7-88639da4683d'
+        type: 'Scope' // Delegated permission
+      }
+    ]
+  }
+]
+
+module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Flight MCP Server'
+    appUniqueName: webapp.outputs.mcpFlightWebAppName
+    requiredResourcceAccess: requiredResourceAccess
+    spaRedirectUris: [
+      'https://${webapp.outputs.mcpFlightWebAppName}.azurewebsites.net'
+      'http://localhost:9000'
+    ]
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+        adminConsentDescription: 'Allow the application to access the flight and reservation'
+        adminConsentDisplayName: 'Allow MCP Flight Server'
+        userConsentDescription: 'Allow the application to access the flight and reservation.'
+        userConsentDisplayName: 'Allow MCP Flight Server'
+        isEnabled: true
+        type: 'User'
+        value: 'flight_reservation_information'
+      }
+    ]
+    preAuthorizedApplications: [
+      {
+        appId: frontEndAppRegistration.outputs.applicationId
+        delegatedPermissionIds: [
+          guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+        ]
+      }
+    ]
+  }
+}
+
+module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Front-End Chatbot Trip Reservation'
+    appUniqueName: webapp.outputs.frontEndWebAppName
+    requiredResourcceAccess: requiredResourceAccess
+    spaRedirectUris: [
+      'https://${webapp.outputs.frontEndWebAppName}.azurewebsites.net'
+      'http://localhost:4200'
+    ]
   }
 }
 
@@ -119,7 +201,7 @@ module db 'core/database/cosmos.bicep' = {
 // output AZURE_TENANT_ID string = tenant().tenantId
 output VIRTUAL_NETWORK_RESOURCE_NAME string = virtualNetwork.outputs.virtualNetworkResourceName
 output COSMOS_DB_NAME string = db.outputs.resourceName
-output COSMOS_DB_ENPPOINT string = db.outputs.endpoint
+output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outputs.applicationId
 // output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 // output PROJECT_NAME string = foundry.outputs.projectName
 // output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName

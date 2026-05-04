@@ -16,6 +16,11 @@ db = client.get_database_client(DATABASE_NAME)
 
 container = db.get_container_client(FLIGHT_CONTAINER)
 
+# Delete all existing items in the container
+# this can be mostly done if the azd up is execute more than once
+for item in container.read_all_items():
+    container.delete_item(item=item['id'], partition_key=item['originCountry'])
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(script_dir, '..', 'data', 'flights.json'), 'r') as f:
     flights = json.load(f)["flights"]
