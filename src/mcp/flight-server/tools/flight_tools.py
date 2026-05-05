@@ -2,13 +2,13 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 from repository import FlightRepository
 from dependencies import get_flight_repository
-from models import Flight, SearchParameters
+from models import Flight, SearchParameters, FlightList
 from typing import List, Optional
 
 flight_mcp = FastMCP("Flight Tools")
 
-@flight_mcp.tool()
-async def get_all_flights(repository:FlightRepository = Depends(get_flight_repository)) -> List[Flight]:
+@flight_mcp.tool(output_schema=FlightList.model_json_schema())
+async def get_all_flights(repository:FlightRepository = Depends(get_flight_repository)) -> FlightList:
     """Retrieve the complete list of all available flights.
        Use this only when no filtering criteria (city or country) is specified.
        Returns flight details including airline, origin, destination, times, price,
@@ -16,7 +16,7 @@ async def get_all_flights(repository:FlightRepository = Depends(get_flight_repos
     return await repository.get_all_flights()
 
 
-@flight_mcp.tool()
+@flight_mcp.tool(output_schema=Flight.model_json_schema())
 async def get_flight_by_id(flight_id: str, repository:FlightRepository = Depends(get_flight_repository)) -> Optional[Flight]:
     """Retrieve a single flight by its unique flight ID.
        Use this to get full details of a specific flight after search results have been presented,
@@ -28,11 +28,11 @@ async def get_flight_by_id(flight_id: str, repository:FlightRepository = Depends
     return await repository.get_flight_by_id(flight_id)
 
 
-@flight_mcp.tool()
+@flight_mcp.tool(output_schema=FlightList.model_json_schema())
 async def search_flights(
     params: SearchParameters,
     repository: FlightRepository = Depends(get_flight_repository)
-) -> List[Flight]:
+) -> FlightList:
     """Search for flights using any combination of filters. All parameters are optional
        but at least one should be provided. All filters are combined with AND logic.
        This is the preferred tool for complex queries like "direct economy flights from
@@ -56,8 +56,8 @@ async def search_flights(
     return await repository.search_flights(params)
 
 
-@flight_mcp.tool()
-async def get_flights_by_country(country:str,repository:FlightRepository = Depends(get_flight_repository)) -> List[Flight]:
+@flight_mcp.tool(output_schema=FlightList.model_json_schema())
+async def get_flights_by_country(country:str,repository:FlightRepository = Depends(get_flight_repository)) -> FlightList:
     """Search for flights departing from a specific country of origin.
        Use this when the user wants flights leaving from a country (e.g. "flights from Canada").
 
@@ -67,8 +67,8 @@ async def get_flights_by_country(country:str,repository:FlightRepository = Depen
     return await repository.get_flights_by_origin_country(country=country)
 
 
-@flight_mcp.tool()
-async def find_by_destination_country(destination_country: str,repository:FlightRepository = Depends(get_flight_repository)) -> List[Flight]:
+@flight_mcp.tool(output_schema=FlightList.model_json_schema())
+async def find_by_destination_country(destination_country: str,repository:FlightRepository = Depends(get_flight_repository)) -> FlightList:
     """Search for flights arriving in a specific destination country.
        Use this when the user wants flights going to a country (e.g. "flights to France").
 
@@ -78,8 +78,8 @@ async def find_by_destination_country(destination_country: str,repository:Flight
     return await repository.find_by_destination_country(destination_country)
 
 
-@flight_mcp.tool()
-async def find_by_city(origin_city: Optional[str] = None, destination_city: Optional[str] = None,repository:FlightRepository = Depends(get_flight_repository)) -> List[Flight]:
+@flight_mcp.tool(output_schema=FlightList.model_json_schema())
+async def find_by_city(origin_city: Optional[str] = None, destination_city: Optional[str] = None,repository:FlightRepository = Depends(get_flight_repository)) -> FlightList:
     """Search for flights by origin city, destination city, or both.
        At least one of origin_city or destination_city must be provided.
        If only origin_city is provided, returns all flights departing from that city.
