@@ -1,4 +1,4 @@
-from models import Flight
+from models import Flight, SearchParameters
 from azure.cosmos.aio import ContainerProxy
 from typing import List, Optional
 
@@ -39,44 +39,34 @@ class FlightRepository:
                 [{"name": "@destinationCity", "value": destination_city}]
             )
 
-    async def search_flights(
-        self,
-        origin_city: Optional[str] = None,
-        destination_city: Optional[str] = None,
-        origin_country: Optional[str] = None,
-        destination_country: Optional[str] = None,
-        max_price: Optional[float] = None,
-        cabin_class: Optional[str] = None,
-        max_stops: Optional[int] = None,
-        min_available_seats: Optional[int] = None,
-    ) -> List[Flight]:
+    async def search_flights(self, params: SearchParameters) -> List[Flight]:
         conditions = []
         parameters = []
 
-        if origin_city:
+        if params.origin_city:
             conditions.append("c.originCity = @originCity")
-            parameters.append({"name": "@originCity", "value": origin_city})
-        if destination_city:
+            parameters.append({"name": "@originCity", "value": params.origin_city})
+        if params.destination_city:
             conditions.append("c.destinationCity = @destinationCity")
-            parameters.append({"name": "@destinationCity", "value": destination_city})
-        if origin_country:
+            parameters.append({"name": "@destinationCity", "value": params.destination_city})
+        if params.origin_country:
             conditions.append("c.originCountry = @originCountry")
-            parameters.append({"name": "@originCountry", "value": origin_country})
-        if destination_country:
+            parameters.append({"name": "@originCountry", "value": params.origin_country})
+        if params.destination_country:
             conditions.append("c.destinationCountry = @destinationCountry")
-            parameters.append({"name": "@destinationCountry", "value": destination_country})
-        if max_price is not None:
+            parameters.append({"name": "@destinationCountry", "value": params.destination_country})
+        if params.max_price is not None:
             conditions.append("c.pricePerPerson <= @maxPrice")
-            parameters.append({"name": "@maxPrice", "value": max_price})
-        if cabin_class:
+            parameters.append({"name": "@maxPrice", "value": params.max_price})
+        if params.cabin_class:
             conditions.append("c.cabinClass = @cabinClass")
-            parameters.append({"name": "@cabinClass", "value": cabin_class})
-        if max_stops is not None:
+            parameters.append({"name": "@cabinClass", "value": params.cabin_class})
+        if params.max_stops is not None:
             conditions.append("c.stops <= @maxStops")
-            parameters.append({"name": "@maxStops", "value": max_stops})
-        if min_available_seats is not None:
+            parameters.append({"name": "@maxStops", "value": params.max_stops})
+        if params.min_available_seats is not None:
             conditions.append("c.availableSeats >= @minSeats")
-            parameters.append({"name": "@minSeats", "value": min_available_seats})
+            parameters.append({"name": "@minSeats", "value": params.min_available_seats})
 
         query = "SELECT * FROM c"
         if conditions:

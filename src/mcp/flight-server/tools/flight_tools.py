@@ -2,7 +2,7 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 from repository import FlightRepository
 from dependencies import get_flight_repository
-from models import Flight
+from models import Flight, SearchParameters
 from typing import List, Optional
 
 flight_mcp = FastMCP("Flight Tools")
@@ -30,14 +30,7 @@ async def get_flight_by_id(flight_id: str, repository:FlightRepository = Depends
 
 @flight_mcp.tool()
 async def search_flights(
-    origin_city: Optional[str] = None,
-    destination_city: Optional[str] = None,
-    origin_country: Optional[str] = None,
-    destination_country: Optional[str] = None,
-    max_price: Optional[float] = None,
-    cabin_class: Optional[str] = None,
-    max_stops: Optional[int] = None,
-    min_available_seats: Optional[int] = None,
+    params: SearchParameters,
     repository: FlightRepository = Depends(get_flight_repository)
 ) -> List[Flight]:
     """Search for flights using any combination of filters. All parameters are optional
@@ -46,28 +39,21 @@ async def search_flights(
        Montreal to Paris under $700 with at least 2 seats available".
 
     Args:
-        origin_city: Filter by departure city (e.g. "Montreal", "Toronto").
-        destination_city: Filter by arrival city (e.g. "Paris", "London", "Rome").
-        origin_country: Filter by country of departure (e.g. "Canada").
-        destination_country: Filter by destination country (e.g. "France", "Italy").
-        max_price: Maximum price per person in CAD (e.g. 700.0).
-        cabin_class: Filter by cabin class (e.g. "economy", "premium_economy").
-        max_stops: Maximum number of stops (0 for direct flights only).
-        min_available_seats: Minimum number of seats that must be available.
+        params: Search filter parameters containing:
+            - originCity: Filter by departure city (e.g. "Montreal", "Toronto").
+            - destinationCity: Filter by arrival city (e.g. "Paris", "London", "Rome").
+            - originCountry: Filter by country of departure (e.g. "Canada").
+            - destinationCountry: Filter by destination country (e.g. "France", "Italy").
+            - maxPrice: Maximum price per person in CAD (e.g. 700.0).
+            - cabinClass: Filter by cabin class (e.g. "economy", "premium_economy").
+            - maxStops: Maximum number of stops (0 for direct flights only).
+            - minAvailableSeats: Minimum number of seats that must be available.
     """
-    if not any([origin_city, destination_city, origin_country, destination_country,
-                max_price is not None, cabin_class, max_stops is not None, min_available_seats is not None]):
+    if not any([params.origin_city, params.destination_city, params.origin_country,
+                params.destination_country, params.max_price is not None, params.cabin_class,
+                params.max_stops is not None, params.min_available_seats is not None]):
         raise ValueError("At least one search filter must be provided. Use get_all_flights for unfiltered results.")
-    return await repository.search_flights(
-        origin_city=origin_city,
-        destination_city=destination_city,
-        origin_country=origin_country,
-        destination_country=destination_country,
-        max_price=max_price,
-        cabin_class=cabin_class,
-        max_stops=max_stops,
-        min_available_seats=min_available_seats,
-    )
+    return await repository.search_flights(params)
 
 
 @flight_mcp.tool()
