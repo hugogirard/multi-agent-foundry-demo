@@ -76,7 +76,7 @@ class FlightRepository:
 
     async def _run_query(self,query:str,parameters:list[dict[str,object]] | None = None) -> List[Flight]:
         flights = []        
-        async for item in self._container.query_items(query=query):
+        async for item in self._container.query_items(query=query, parameters=parameters):
             session = Flight.model_validate(item)
             flights.append(session)
         return flights     
