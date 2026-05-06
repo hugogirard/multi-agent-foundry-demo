@@ -1,19 +1,37 @@
 from fastmcp import FastMCP
 from fastmcp.server.providers import FileSystemProvider
 from fastmcp.server.auth.providers.azure import AzureProvider
+from fastmcp.server.auth.providers.jwt import JWTVerifier
+from fastmcp.server.auth.auth import MultiAuth
 from fastmcp.server.dependencies import get_access_token
 from tools import flight_mcp
 from pathlib import Path
 from config import Config
 
 
-auth_provider = AzureProvider(
+# OAuth Proxy for interactive clients (e.g., VS Code)
+azure_proxy = AzureProvider(
     client_id=Config.entra_client_id(),
     client_secret=Config.client_secret(),
     tenant_id=Config.tenant_id(),
     base_url=Config.oauth_redirect_url(),
     identifier_uri=Config.identifier_uri(),
     required_scopes=[Config.scope()]
+)
+
+# Direct JWT verifier for raw Azure AD tokens (e.g., Foundry Agent Service OAuth Identity Passthrough)
+azure_jwt_verifier = JWTVerifier(
+    jwks_uri=f"https://login.microsoftonline.com/{Config.tenant_id()}/discovery/v2.0/keys",
+    issuer=f"https://login.microsoftonline.com/{Config.tenant_id()}/v2.0",
+    audience=[Config.entra_client_id(), Config.identifier_uri()],
+    algorithm="RS256",
+    required_scopes=[Config.scope()]
+)
+
+# MultiAuth: tries proxy first (VS Code), falls back to direct JWT validation (Foundry)
+auth_provider = MultiAuth(
+    server=azure_proxy,
+    verifiers=[azure_jwt_verifier]
 )
 
 mcp = FastMCP("Flight MCP Server",
