@@ -5,6 +5,8 @@ metadata:
 hooks:
   postprovision:
     # - shell: pwsh
-    #   run: scripts/postprovision.ps1
+    #   run: scripts/capability-host.ps1
     - shell: pwsh
-      run: scripts/load-data.ps1
+      run: scripts/deploy-webapp.ps1
+    # - shell: pwsh
+    #   run: scripts/load-data.ps1

@@ -85,6 +85,7 @@ module webapp 'core/webapp/workload.bicep' = {
     mcpFlightServerName: '${abbrs.webSitesAppService}mcp-fligh-server-${resourceToken}'
     clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
     tags: tags
+    cosmosDbResourceName: db.outputs.resourceName
   }
 }
 
@@ -108,9 +109,9 @@ module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
     appDisplayName: 'Flight MCP Server'
     appUniqueName: webapp.outputs.mcpFlightWebAppName
     requiredResourcceAccess: requiredResourceAccess
-    spaRedirectUris: [
-      'https://${webapp.outputs.mcpFlightWebAppName}.azurewebsites.net'
-      'http://localhost:9000'
+    webRedirectUris: [
+      'https://${webapp.outputs.mcpFlightWebAppName}.azurewebsites.net/auth/callback'
+      'http://localhost:9000/auth/callback'
     ]
     oauth2PermissionScopes: [
       {
@@ -124,14 +125,6 @@ module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
         value: 'flight_reservation_information'
       }
     ]
-    preAuthorizedApplications: [
-      {
-        appId: frontEndAppRegistration.outputs.applicationId
-        delegatedPermissionIds: [
-          guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
-        ]
-      }
-    ]
   }
 }
 
@@ -140,7 +133,17 @@ module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
   params: {
     appDisplayName: 'Front-End Chatbot Trip Reservation'
     appUniqueName: webapp.outputs.frontEndWebAppName
-    requiredResourcceAccess: requiredResourceAccess
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
     spaRedirectUris: [
       'https://${webapp.outputs.frontEndWebAppName}.azurewebsites.net'
       'http://localhost:4200'
@@ -202,6 +205,8 @@ module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
 output VIRTUAL_NETWORK_RESOURCE_NAME string = virtualNetwork.outputs.virtualNetworkResourceName
 output COSMOS_DB_NAME string = db.outputs.resourceName
 output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outputs.applicationId
+output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
+output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
 // output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 // output PROJECT_NAME string = foundry.outputs.projectName
 // output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName

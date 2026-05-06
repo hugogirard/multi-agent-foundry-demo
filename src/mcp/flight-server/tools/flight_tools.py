@@ -5,7 +5,14 @@ from dependencies import get_flight_repository
 from models import Flight, SearchParameters, FlightList
 from typing import List, Optional
 
-flight_mcp = FastMCP("Flight Tools")
+flight_mcp = FastMCP("Flight Tools",
+                     instructions="""You are a flight search assistant. Use these tools to find and retrieve 
+                                     available flights between Canadian cities and European destinations.
+                                     You can list all flights, look up a specific flight by ID, or search 
+                                     using any combination of filters: origin/destination city or country, 
+                                     maximum price (CAD per person), cabin class, maximum stops, and minimum 
+                                     available seats. Always prefer search_flights for multi-criteria queries. 
+                                     Use get_all_flights only when no filters are specified.""")
 
 @flight_mcp.tool(output_schema=FlightList.model_json_schema())
 async def get_all_flights(repository:FlightRepository = Depends(get_flight_repository)) -> FlightList:
@@ -13,7 +20,8 @@ async def get_all_flights(repository:FlightRepository = Depends(get_flight_repos
        Use this only when no filtering criteria (city or country) is specified.
        Returns flight details including airline, origin, destination, times, price,
        and available seats."""
-    return await repository.get_all_flights()
+    flights = await repository.get_all_flights()
+    return FlightList(flights=flights)
 
 
 @flight_mcp.tool(output_schema=Flight.model_json_schema())
@@ -53,7 +61,8 @@ async def search_flights(
                 params.destination_country, params.max_price is not None, params.cabin_class,
                 params.max_stops is not None, params.min_available_seats is not None]):
         raise ValueError("At least one search filter must be provided. Use get_all_flights for unfiltered results.")
-    return await repository.search_flights(params)
+    flights = await repository.search_flights(params)
+    return FlightList(flights=flights)
 
 
 @flight_mcp.tool(output_schema=FlightList.model_json_schema())
@@ -64,7 +73,8 @@ async def get_flights_by_country(country:str,repository:FlightRepository = Depen
        Args:
           country: The country of origin where the flight departs from (e.g. Canada, France, Italy).
     """
-    return await repository.get_flights_by_origin_country(country=country)
+    flights = await repository.get_flights_by_origin_country(country=country)
+    return FlightList(flights=flights)
 
 
 @flight_mcp.tool(output_schema=FlightList.model_json_schema())
@@ -75,7 +85,8 @@ async def find_by_destination_country(destination_country: str,repository:Flight
     Args:
         destination_country: The destination country name (e.g. Canada, France, Italy).
     """
-    return await repository.find_by_destination_country(destination_country)
+    flights = await repository.find_by_destination_country(destination_country)
+    return FlightList(flights=flights)
 
 
 @flight_mcp.tool(output_schema=FlightList.model_json_schema())
@@ -92,4 +103,5 @@ async def find_by_city(origin_city: Optional[str] = None, destination_city: Opti
     """
     if not origin_city and not destination_city:
         raise ValueError("At least one of origin_city or destination_city must be provided.")
-    return await repository.find_by_city(origin_city, destination_city)
+    flights = await repository.find_by_city(origin_city, destination_city)
+    return FlightList(flights=flights)

@@ -3,6 +3,7 @@ param clientWebAppName string
 param appServicePlanResourceName string
 param location string
 param containerRegistryName string
+param cosmosDbResourceName string
 param tags object
 
 resource asp 'Microsoft.Web/serverfarms@2024-11-01' = {
@@ -18,56 +19,105 @@ resource asp 'Microsoft.Web/serverfarms@2024-11-01' = {
   }
 }
 
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2025-11-01-preview' existing = {
+  name: cosmosDbResourceName
+}
+
 resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' existing = {
   name: containerRegistryName
 }
 
-var apps = [
-  {
-    name: mcpFlightServerName
-    tags: union(tags, { 'azd-service-name': 'mcpflight' })
-  }
-  {
-    name: clientWebAppName
-    tags: union(tags, { 'azd-service-name': 'frontend' })
-  }
-]
-
-resource webApps 'Microsoft.Web/sites@2025-03-01' = [
-  for app in apps: {
-    name: app.name
-    location: location
-    tags: app.tags
-    properties: {
-      siteConfig: {
-        appSettings: [
-          {
-            name: 'DOCKER_REGISTRY_SERVER_URL'
-            value: 'https://${acr.properties.loginServer}'
-          }
-          {
-            name: 'DOCKER_REGISTRY_SERVER_USERNAME'
-            value: acr.listCredentials().username
-          }
-          {
-            name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
-            value: acr.listCredentials().passwords[0].value
-          }
-          {
-            name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
-            value: 'false'
-          }
-        ]
-        linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
-        alwaysOn: true
-      }
-      serverFarmId: asp.id
-      httpsOnly: true
-      publicNetworkAccess: 'Enabled'
-      clientAffinityEnabled: false
+resource mcpFlight 'Microsoft.Web/sites@2025-03-01' = {
+  name: mcpFlightServerName
+  location: location
+  tags: union(tags, { 'azd-service-name': 'mcpflight' })
+  properties: {
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acr.properties.loginServer}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.listCredentials().username
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+        {
+          name: 'COSMOS_DB_CONNECTION_STRING'
+          value: cosmos.listConnectionStrings().connectionStrings[0].connectionString
+        }
+        {
+          name: 'COSMOS_DATABASE'
+          value: 'ContosoAgency'
+        }
+        {
+          name: 'FLIGHT_CONTAINER'
+          value: 'flight'
+        }
+        {
+          name: 'REDIRECT_URL'
+          value: 'https://${mcpFlightServerName}.azurewebsites.net'
+        }
+        {
+          name: 'TENANT_ID'
+          value: tenant().tenantId
+        }
+        {
+          name: 'IDENTIFIER_URI'
+          value: 'api://${mcpFlightServerName}'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
+      alwaysOn: true
     }
+    serverFarmId: asp.id
+    httpsOnly: true
+    publicNetworkAccess: 'Enabled'
+    clientAffinityEnabled: false
   }
-]
+}
 
-output mcpFlightWebAppName string = webApps[0].name
-output frontEndWebAppName string = webApps[1].name
+resource frontEnd 'Microsoft.Web/sites@2025-03-01' = {
+  name: clientWebAppName
+  location: location
+  tags: union(tags, { 'azd-service-name': 'frontend' })
+  properties: {
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acr.properties.loginServer}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.listCredentials().username
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
+      alwaysOn: true
+    }
+    serverFarmId: asp.id
+    httpsOnly: true
+    publicNetworkAccess: 'Enabled'
+    clientAffinityEnabled: false
+  }
+}
+
+output mcpFlightWebAppName string = mcpFlight.name
+output frontEndWebAppName string = frontEnd.name
