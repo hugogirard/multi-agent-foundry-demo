@@ -5,6 +5,13 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Only run if BRING_YOUR_OWN_RESOURCE is true
+$bringYourOwn = azd env get-value BRING_YOUR_OWN_RESOURCE 2>$null
+if ($bringYourOwn -ne 'true') {
+    Write-Host "Skipping capability host deployment (BRING_YOUR_OWN_RESOURCE is not true)."
+    exit 0
+}
+
 # Read outputs from azd environment
 $resourceGroupName = azd env get-value AZURE_RESOURCE_GROUP
 $foundryResourceName = azd env get-value FOUNDRY_RESOURCE_NAME

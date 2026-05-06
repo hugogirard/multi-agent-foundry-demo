@@ -12,8 +12,8 @@ auth_provider = AzureProvider(
     client_secret=Config.client_secret(),
     tenant_id=Config.tenant_id(),
     base_url=Config.oauth_redirect_url(),
-    identifier_uri="api://app-mcp-fligh-server-penkryleu3m3e",
-    required_scopes=["flight_reservation_information"]
+    identifier_uri=Config.identifier_uri(),
+    required_scopes=[Config.scope()]
 )
 
 mcp = FastMCP("Flight MCP Server",

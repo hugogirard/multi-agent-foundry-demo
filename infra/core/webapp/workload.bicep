@@ -74,6 +74,10 @@ resource mcpFlight 'Microsoft.Web/sites@2025-03-01' = {
           name: 'IDENTIFIER_URI'
           value: 'api://${mcpFlightServerName}'
         }
+        {
+          name: 'SCOPE'
+          value: 'flight_reservation_information'
+        }
       ]
       linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
       alwaysOn: true

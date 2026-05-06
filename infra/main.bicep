@@ -1,3 +1,5 @@
+import { modelParameters } from './types/customType.bicep'
+
 targetScope = 'subscription'
 
 @minLength(1)
@@ -9,7 +11,11 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
+@description('The name of the resource group')
 param resourceGroupName string
+
+@description('When creating foundry do you bring your own resource (CosmosDB, AISearch, VNET)')
+param bringYourOwnResource bool = false
 
 var abbrs = loadJsonContent('./abbreviations.json')
 
@@ -26,6 +32,20 @@ var virtualNetworkConfig = {
   agentSubnetAddressPrefix: '192.168.1.0/24'
 }
 
+var chatModelProperties modelParameters = {
+  deploymentName: 'gpt-5.4-mini'
+  modelProperties: {
+    name: 'gpt-5.4-mini'
+    format: 'OpenAI'
+    version: '2026-03-17'
+  }
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 150
+  }
+  versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
+}
+
 #disable-next-line no-unused-vars
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
@@ -36,7 +56,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: tags
 }
 
-module virtualNetwork 'core/networking/vnet.bicep' = {
+module virtualNetwork 'core/networking/vnet.bicep' = if (bringYourOwnResource) {
   scope: rg
   params: {
     location: location
@@ -153,60 +173,65 @@ module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
 
 // Foundry
 
-// module foundryIdentity 'core/identity/user.assigned.identity.bicep' = {
-//   scope: rg
-//   params: {
-//     location: location
-//     identityName: '${abbrs.managedIdentityUserAssignedIdentities}foundry-${resourceToken}'
-//     tags: tags
-//   }
-// }
+module foundryIdentity 'core/identity/user.assigned.identity.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}foundry-${resourceToken}'
+    tags: tags
+  }
+}
 
-// module foundryDependencies 'core/ai/foundry-dependencies.bicep' = {
-//   scope: rg
-//   params: {
-//     location: location
-//     tags: tags
-//     storageResourceName: '${abbrs.storageStorageAccounts}${resourceToken}'
-//     cosmosDbResouceName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
-//     aiSearchResourceName: '${abbrs.searchSearchServices}${resourceToken}'
-//   }
-// }
+module foundryDependencies 'core/ai/foundry-dependencies.bicep' = if (bringYourOwnResource) {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    storageResourceName: '${abbrs.storageStorageAccounts}${resourceToken}'
+    cosmosDbResouceName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+    aiSearchResourceName: '${abbrs.searchSearchServices}${resourceToken}'
+  }
+}
 
 // Assign all the RBAC roles to foundry
 
-// module foundry 'core/ai/foundry.bicep' = {
-//   scope: rg
-//   params: {
-//     location: location
-//     tags: tags
-//     foundryResourceName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
-//     subnetAgentResourceId: virtualNetwork.outputs.subnetAgentResourceId
-//     aiSearchResourceName: foundryDependencies.outputs.aiSearchResourceName
-//     cosmosResourceName: foundryDependencies.outputs.cosmosdbResourceName
-//     storageResourceName: foundryDependencies.outputs.storageResourceName
-//   }
-// }
+module foundry 'core/ai/foundry.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    foundryResourceName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    subnetAgentResourceId: bringYourOwnResource == true ? virtualNetwork!.outputs.subnetAgentResourceId : ''
+    aiSearchResourceName: bringYourOwnResource == true ? foundryDependencies!.outputs.aiSearchResourceName : ''
+    cosmosResourceName: bringYourOwnResource == true ? foundryDependencies!.outputs.cosmosdbResourceName : ''
+    storageResourceName: bringYourOwnResource == true ? foundryDependencies!.outputs.storageResourceName : ''
+    bringYourOwnResource: bringYourOwnResource
+    chatModelParameters: chatModelProperties
+  }
+}
 
-// module foundryRbac 'core/rbac/foundry.bicep' = {
-//   scope: rg
-//   params: {
-//     foundryAccountPrincipalId: foundry.outputs.foundryIdentityPrincipalId
-//     projectPrincipalId: foundry.outputs.projectPrincipalId
-//     storageAccountName: foundryDependencies.outputs.storageResourceName
-//     cosmosDbAccountName: foundryDependencies.outputs.cosmosdbResourceName
-//     aiSearchName: foundryDependencies.outputs.aiSearchResourceName
-//   }
-// }
+module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
+  scope: rg
+  params: {
+    foundryAccountPrincipalId: foundry.outputs.foundryIdentityPrincipalId
+    projectPrincipalId: foundry.outputs.projectPrincipalId
+    storageAccountName: foundryDependencies!.outputs.storageResourceName
+    cosmosDbAccountName: foundryDependencies!.outputs.cosmosdbResourceName
+    aiSearchName: foundryDependencies!.outputs.aiSearchResourceName
+  }
+}
 
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 // output AZURE_LOCATION string = location
 // output AZURE_TENANT_ID string = tenant().tenantId
-output VIRTUAL_NETWORK_RESOURCE_NAME string = virtualNetwork.outputs.virtualNetworkResourceName
+output VIRTUAL_NETWORK_RESOURCE_NAME string = bringYourOwnResource == true
+  ? virtualNetwork!.outputs.virtualNetworkResourceName
+  : ''
 output COSMOS_DB_NAME string = db.outputs.resourceName
 output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outputs.applicationId
 output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
+output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
 // output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 // output PROJECT_NAME string = foundry.outputs.projectName
 // output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName

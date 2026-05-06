@@ -36,4 +36,7 @@ class Config:
     @staticmethod
     def identifier_uri() -> str:
         return os.getenv('IDENTIFIER_URI')
-        
+    
+    @staticmethod
+    def scope() -> str:
+        return os.getenv('SCOPE')
