@@ -1,3 +1,4 @@
+param flightAgentApiResourceName string
 param mcpFlightServerName string
 param clientWebAppName string
 param appServicePlanResourceName string
@@ -25,6 +26,40 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2025-11-01-preview' exist
 
 resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' existing = {
   name: containerRegistryName
+}
+
+resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
+  name: flightAgentApiResourceName
+  location: location
+  tags: union(tags, { 'azd-service-name': 'mcpflight' })
+  properties: {
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acr.properties.loginServer}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.listCredentials().username
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
+      alwaysOn: true
+    }
+    serverFarmId: asp.id
+    httpsOnly: true
+    publicNetworkAccess: 'Enabled'
+    clientAffinityEnabled: false
+  }
 }
 
 resource mcpFlight 'Microsoft.Web/sites@2025-03-01' = {
@@ -125,3 +160,4 @@ resource frontEnd 'Microsoft.Web/sites@2025-03-01' = {
 
 output mcpFlightWebAppName string = mcpFlight.name
 output frontEndWebAppName string = frontEnd.name
+output flightAgentApiResourceName string = flightApi.name

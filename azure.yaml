@@ -4,9 +4,11 @@ metadata:
 
 hooks:
   postprovision:
+    # - shell: pwsh
+    #   run: scripts/capability-host.ps1
+    # - shell: pwsh
+    #   run: scripts/deploy-webapp.ps1
     - shell: pwsh
-      run: scripts/capability-host.ps1
-    - shell: pwsh
-      run: scripts/deploy-webapp.ps1
+      run: scripts/deploy-foundry-connection.ps1
     # - shell: pwsh
     #   run: scripts/load-data.ps1

@@ -103,6 +103,7 @@ module webapp 'core/webapp/workload.bicep' = {
     appServicePlanResourceName: '${abbrs.webServerFarms}${resourceToken}'
     containerRegistryName: containerRegistry.outputs.resourceName
     mcpFlightServerName: '${abbrs.webSitesAppService}mcp-fligh-server-${resourceToken}'
+    flightAgentApiResourceName: '${abbrs.webSitesAppService}flight-agent-api-${resourceToken}'
     clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
     tags: tags
     cosmosDbResourceName: db.outputs.resourceName
@@ -145,6 +146,25 @@ module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
         value: 'flight_reservation_information'
       }
     ]
+  }
+}
+
+module FlightAgentApi 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Flight Agent API'
+    appUniqueName: webapp.outputs.flightAgentApiResourceName
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
   }
 }
 
@@ -232,8 +252,8 @@ output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outpu
 output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
 output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
-// output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
-// output PROJECT_NAME string = foundry.outputs.projectName
+output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
+output PROJECT_NAME string = foundry.outputs.projectName
 // output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
 // output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
 // output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName
