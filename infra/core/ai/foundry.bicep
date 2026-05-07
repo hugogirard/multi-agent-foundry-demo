@@ -135,6 +135,7 @@ output foundryResourceName string = foundry.name
 output foundryResourceId string = foundry.id
 output foundryIdentityPrincipalId string = foundry.identity.principalId
 output projectName string = foundry::project.name
+output modelName string = foundry::chatModelDeployment.name
 output projectPrincipalId string = foundry::project.identity.principalId
 output connectionSearchName string = bringYourOwnResource == true ? connectionSearch.name : ''
 output connectionCosmosName string = bringYourOwnResource == true ? connectionCosmos.name : ''

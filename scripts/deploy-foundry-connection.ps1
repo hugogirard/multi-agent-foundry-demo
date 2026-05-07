@@ -32,16 +32,16 @@ $credentials = az ad app credential list --id $clientId | ConvertFrom-Json
 $existingSecret = $credentials | Where-Object { $_.displayName -eq "Foundry MCP Connection" }
 
 if ($existingSecret) {
-    Write-Host "Existing 'Foundry MCP Connection' credential found. Removing..."
-    az ad app credential delete --id $clientId --key-id $existingSecret.keyId
+  Write-Host "Existing 'Foundry MCP Connection' credential found. Removing..."
+  az ad app credential delete --id $clientId --key-id $existingSecret.keyId
 }
 
 Write-Host "Creating new 'Foundry MCP Connection' credential..."
 $secretValue = az ad app credential reset --id $clientId --display-name "Foundry MCP Connection" --query "password" -o tsv
 
 if (-not $secretValue) {
-    Write-Error "Failed to create app registration secret."
-    exit 1
+  Write-Error "Failed to create app registration secret."
+  exit 1
 }
 
 Write-Host "Secret created successfully."
@@ -81,14 +81,69 @@ $tempFile = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($tempFile, $body)
 
 Write-Host "Creating connection via REST API..."
-az rest --method PUT --url $connectionUrl --body "@$tempFile" --headers "Content-Type=application/json"
+$connectionResponse = az rest --method PUT --url $connectionUrl --body "@$tempFile" --headers "Content-Type=application/json" -o json
 
 $restExitCode = $LASTEXITCODE
 Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
 
 if ($restExitCode -ne 0) {
-    Write-Error "Failed to create Foundry MCP connection."
-    exit 1
+  Write-Error "Failed to create Foundry MCP connection."
+  exit 1
 }
 
 Write-Host "Foundry MCP connection deployed successfully."
+
+# --- Add redirect URL from connection response to app registration ---
+
+$connectionJson = $connectionResponse | ConvertFrom-Json
+
+# Try multiple known paths for the redirect URL
+$redirectUrl = $connectionJson.properties.metadata.redirectUrl
+if (-not $redirectUrl) { $redirectUrl = $connectionJson.properties.metadata.RedirectUrl }
+
+if (-not $redirectUrl) {
+  Write-Warning "No redirectUrl found in PUT response. Fetching connection via GET..."
+  $getResponse = az rest --method GET --url $connectionUrl -o json | ConvertFrom-Json
+  $redirectUrl = $getResponse.properties.metadata.redirectUrl
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.metadata.RedirectUrl }
+
+  # Fallback: construct from connection resource ID
+  if (-not $redirectUrl) {
+    $connectionId = $getResponse.properties.connectionId
+    if (-not $connectionId) { $connectionId = $getResponse.id }
+    if ($connectionId) {
+      # Extract the GUID portion from the resource ID if it's a full ARM path
+      $guidMatch = [regex]::Match($connectionId, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
+      if ($guidMatch.Success) {
+        $redirectUrl = "https://global.consent.azure-apim.net/redirect/$($guidMatch.Value)-$connectionName"
+        Write-Host "Constructed redirect URL from connection ID: $redirectUrl"
+      }
+    }
+  }
+}
+
+if ($redirectUrl) {
+  Write-Host "Redirect URL from connection: $redirectUrl"
+
+  # Get existing web redirect URIs so we don't overwrite them
+  $existingUris = az ad app show --id $clientId --query "web.redirectUris" -o json | ConvertFrom-Json
+
+  if ($existingUris -contains $redirectUrl) {
+    Write-Host "Redirect URL already present in app registration. Skipping update."
+  }
+  else {
+    $allUris = @($existingUris) + @($redirectUrl)
+    Write-Host "Adding redirect URL to app registration..."
+    az ad app update --id $clientId --web-redirect-uris @allUris
+
+    if ($LASTEXITCODE -ne 0) {
+      Write-Error "Failed to update app registration with redirect URL."
+      exit 1
+    }
+
+    Write-Host "App registration updated with redirect URL."
+  }
+}
+else {
+  Write-Warning "Could not extract redirect URL from connection response. You may need to add it manually."
+}

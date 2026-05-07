@@ -254,6 +254,7 @@ output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resource
 output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
 output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 output PROJECT_NAME string = foundry.outputs.projectName
+output AZURE_OPENAI_MODEL string = foundry.outputs.modelName
 // output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
 // output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
 // output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName
