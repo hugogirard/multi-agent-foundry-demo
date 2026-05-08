@@ -1,8 +1,10 @@
+import logging
 from fastapi import FastAPI
 from dependencies import azure_scheme
 from fastapi.middleware.cors import CORSMiddleware
 from config import Config
 from contextlib import asynccontextmanager
+from services import ConversationService
 from dotenv import load_dotenv
 from factory import AgentFactory
 from fastapi_azure_auth import SingleTenantAzureAuthorizationCodeBearer
@@ -15,6 +17,8 @@ config = Config()
 async def lifespan_event(app: FastAPI):
     
     app.state.agent_factory = AgentFactory(config=config)
+
+    app.state.conversation_service = ConversationService(app.state.agent_factory)
 
     # Load config from the OpenId config endpoint
     await azure_scheme.openid_config.load_config()
@@ -47,4 +51,12 @@ class Boostrapper:
         return app
     
     def _configure_monitoring(self):
-        pass
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        # Reduce noise from third-party libraries
+        logging.getLogger("azure").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)

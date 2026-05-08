@@ -41,3 +41,7 @@ class Config:
     @property
     def scope_description(self) -> str:
         return 'user_impersonation'
+    
+    @property
+    def foundry_project_endpoint(self) -> str:
+        return os.getenv('FOUNDRY_PROJECT_ENDPOINT')
