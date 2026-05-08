@@ -165,6 +165,41 @@ module FlightAgentApi 'core/entra/app.registration.bicep' = {
         ]
       }
     ])
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+        adminConsentDescription: 'Access API as user'
+        adminConsentDisplayName: 'Allows the app to access the API as the user.'
+        userConsentDescription: 'Access API as you'
+        userConsentDisplayName: 'Allows the app to access the API as you.'
+        isEnabled: true
+        type: 'User'
+        value: 'user_impersonation'
+      }
+    ]
+  }
+}
+
+// App registration used for the OpenAPI swagger UI
+module OpenAPI 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'OpenAPI'
+    appUniqueName: 'openapi'
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightAgentApi.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+    spaRedirectUris: [
+      'http://localhost:8000/oauth2-redirect' // Redirect for the FlightAgentAPI      
+    ]
   }
 }
 
