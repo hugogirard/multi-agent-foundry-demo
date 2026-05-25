@@ -279,6 +279,7 @@ module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 // output AZURE_LOCATION string = location
 // output AZURE_TENANT_ID string = tenant().tenantId
+output AZURE_RESOURCE_GROUP string = rg.name
 output VIRTUAL_NETWORK_RESOURCE_NAME string = bringYourOwnResource == true
   ? virtualNetwork!.outputs.virtualNetworkResourceName
   : ''

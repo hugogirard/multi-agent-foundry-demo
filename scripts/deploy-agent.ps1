@@ -13,9 +13,17 @@ $mcpFlightWebAppName = azd env get-value MCP_FLIGHT_WEBAPP_NAME
 $model = azd env get-value AZURE_OPENAI_MODEL
 
 # Construct derived values
-$env:FOUNDRY_PROJECT_ENDPOINT = "https://$foundryResourceName.cognitiveservices.azure.com/foundry/projects/$projectName"
+$env:FOUNDRY_PROJECT_ENDPOINT = "https://$foundryResourceName.services.ai.azure.com/api/projects/$projectName"
 $env:MCP_SERVER_URL = "https://$mcpFlightWebAppName.azurewebsites.net/mcp"
 $env:AZURE_OPENAI_MODEL = $model
+
+# Write .env file for agents so load_dotenv picks up current values
+$envContent = @"
+FOUNDRY_PROJECT_ENDPOINT=$env:FOUNDRY_PROJECT_ENDPOINT
+MCP_SERVER_URL=$env:MCP_SERVER_URL
+AZURE_OPENAI_MODEL=$env:AZURE_OPENAI_MODEL
+"@
+Set-Content -Path "./agents/.env" -Value $envContent -Encoding UTF8
 
 Write-Host "  Foundry Endpoint: $env:FOUNDRY_PROJECT_ENDPOINT"
 Write-Host "  MCP Server URL: $env:MCP_SERVER_URL"

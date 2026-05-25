@@ -18,6 +18,12 @@ $keys = az cosmosdb keys list `
 
 $env:CosmosDbConnectionString = $keys.connectionStrings[0].connectionString
 
+# Write .env file for utility so load_dotenv picks up current values
+$envContent = @"
+CosmosDbConnectionString=$($env:CosmosDbConnectionString)
+"@
+Set-Content -Path "./utility/.env" -Value $envContent -Encoding UTF8
+
 Write-Host "Running data loader..."
 uv run --project ./utility python ./utility/data_loader.py
 

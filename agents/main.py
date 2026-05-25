@@ -53,7 +53,13 @@ def main():
         response = requests.post(create_url, headers=headers, json=agent_def)
 
     print(f"Status: {response.status_code}")
-    print(json.dumps(response.json(), indent=2))
+    if response.text:
+        print(json.dumps(response.json(), indent=2))
+    else:
+        print("(empty response body)")
+
+    if response.status_code >= 400:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
