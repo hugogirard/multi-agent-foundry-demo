@@ -97,28 +97,57 @@ Write-Host "Foundry MCP connection deployed successfully."
 
 $connectionJson = $connectionResponse | ConvertFrom-Json
 
-# Try multiple known paths for the redirect URL
+# Try multiple known paths for the redirect URL from PUT response
 $redirectUrl = $connectionJson.properties.metadata.redirectUrl
 if (-not $redirectUrl) { $redirectUrl = $connectionJson.properties.metadata.RedirectUrl }
+if (-not $redirectUrl) { $redirectUrl = $connectionJson.properties.metadata.redirect_url }
+if (-not $redirectUrl) { $redirectUrl = $connectionJson.properties.metadata.RedirectUri }
+if (-not $redirectUrl) { $redirectUrl = $connectionJson.properties.redirectUrl }
 
 if (-not $redirectUrl) {
-  Write-Warning "No redirectUrl found in PUT response. Fetching connection via GET..."
-  $getResponse = az rest --method GET --url $connectionUrl -o json | ConvertFrom-Json
+  Write-Host "No redirectUrl found in PUT response. Fetching connection via GET..."
+  $getResponseRaw = az rest --method GET --url $connectionUrl -o json
+  $getResponse = $getResponseRaw | ConvertFrom-Json
+
+  # Debug: show all metadata keys
+  Write-Host "  Connection metadata keys: $($getResponse.properties.metadata.PSObject.Properties.Name -join ', ')"
+
   $redirectUrl = $getResponse.properties.metadata.redirectUrl
   if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.metadata.RedirectUrl }
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.metadata.redirect_url }
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.metadata.RedirectUri }
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.redirectUrl }
 
-  # Fallback: construct from connection resource ID
+  # Try credentials section
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.credentials.redirectUrl }
+  if (-not $redirectUrl) { $redirectUrl = $getResponse.properties.credentials.RedirectUrl }
+
+  # Search all metadata values for the consent URL pattern
   if (-not $redirectUrl) {
-    $connectionId = $getResponse.properties.connectionId
-    if (-not $connectionId) { $connectionId = $getResponse.id }
-    if ($connectionId) {
-      # Extract the GUID portion from the resource ID if it's a full ARM path
-      $guidMatch = [regex]::Match($connectionId, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
-      if ($guidMatch.Success) {
-        $redirectUrl = "https://global.consent.azure-apim.net/redirect/$($guidMatch.Value)-$connectionName"
-        Write-Host "Constructed redirect URL from connection ID: $redirectUrl"
+    foreach ($prop in $getResponse.properties.metadata.PSObject.Properties) {
+      if ($prop.Value -like "https://global.consent.azure-apim.net/redirect/*") {
+        $redirectUrl = $prop.Value
+        Write-Host "  Found redirect URL in metadata property '$($prop.Name)': $redirectUrl"
+        break
       }
     }
+  }
+
+  # Search all top-level properties for the consent URL pattern
+  if (-not $redirectUrl) {
+    foreach ($prop in $getResponse.properties.PSObject.Properties) {
+      if ($prop.Value -is [string] -and $prop.Value -like "https://global.consent.azure-apim.net/redirect/*") {
+        $redirectUrl = $prop.Value
+        Write-Host "  Found redirect URL in property '$($prop.Name)': $redirectUrl"
+        break
+      }
+    }
+  }
+
+  # Last resort: dump the full response for debugging
+  if (-not $redirectUrl) {
+    Write-Warning "Could not find redirect URL in any known property. Full response:"
+    Write-Host $getResponseRaw
   }
 }
 
@@ -128,12 +157,20 @@ if ($redirectUrl) {
   # Get existing web redirect URIs so we don't overwrite them
   $existingUris = az ad app show --id $clientId --query "web.redirectUris" -o json | ConvertFrom-Json
 
-  if ($existingUris -contains $redirectUrl) {
+  # Remove any stale global.consent.azure-apim.net redirect URIs before adding the current one
+  $filteredUris = @($existingUris | Where-Object { $_ -notlike "https://global.consent.azure-apim.net/redirect/*" })
+  $allUris = @($filteredUris) + @($redirectUrl)
+
+  # Deduplicate in case the current URL is already present
+  $allUris = @($allUris | Select-Object -Unique)
+
+  $diff = Compare-Object -ReferenceObject @($allUris | Sort-Object) -DifferenceObject @($existingUris | Sort-Object) -ErrorAction SilentlyContinue
+  if (-not $diff) {
     Write-Host "Redirect URL already present in app registration. Skipping update."
   }
   else {
-    $allUris = @($existingUris) + @($redirectUrl)
-    Write-Host "Adding redirect URL to app registration..."
+    Write-Host "Updating app registration redirect URIs (replacing stale consent URI)..."
+    Write-Host "  New URIs: $($allUris -join ', ')"
     az ad app update --id $clientId --web-redirect-uris @allUris
 
     if ($LASTEXITCODE -ne 0) {

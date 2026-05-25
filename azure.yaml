@@ -14,3 +14,5 @@ hooks:
       run: scripts/deploy-agent.ps1
     - shell: pwsh
       run: scripts/load-data.ps1
+    - shell: pwsh
+      run: scripts/grand-admin-consent.ps1
