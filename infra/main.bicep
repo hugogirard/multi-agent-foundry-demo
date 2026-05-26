@@ -164,6 +164,15 @@ module FlightAgentApi 'core/entra/app.registration.bicep' = {
           }
         ]
       }
+      {
+        resourceAppId: '18a66f5f-dbdf-4c17-9dd7-1634712a9cbe' // Azure Machine Learning Service
+        resourceAccess: [
+          {
+            id: '1a7925b5-f871-417a-9b8b-303f9f29fa10' // User impersonation know GUID
+            type: 'Scope'
+          }
+        ]
+      }
     ])
     oauth2PermissionScopes: [
       {
@@ -277,8 +286,6 @@ module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
 }
 
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
-// output AZURE_LOCATION string = location
-// output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_RESOURCE_GROUP string = rg.name
 output VIRTUAL_NETWORK_RESOURCE_NAME string = bringYourOwnResource == true
   ? virtualNetwork!.outputs.virtualNetworkResourceName
@@ -288,9 +295,7 @@ output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outpu
 output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
 output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
+output FLIGHT_AGENT_API_WEBAPP_NAME string = webapp.outputs.flightAgentApiResourceName
 output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 output PROJECT_NAME string = foundry.outputs.projectName
 output AZURE_OPENAI_MODEL string = foundry.outputs.modelName
-// output CONNECTION_SEARCH_NAME string = foundry.outputs.connectionSearchName
-// output CONNECTION_COSMOS_NAME string = foundry.outputs.connectionCosmosName
-// output CONNECTION_STORAGE_NAME string = foundry.outputs.connectionStorageName

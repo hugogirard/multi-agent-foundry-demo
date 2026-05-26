@@ -140,7 +140,8 @@ IDENTIFIER_URI=api://$mcpFlightApiName
 SCOPE=flight_reservation_information
 "@
 
-Set-Content -Path "./src/mcp/flight-server/.env" -Value $mcpEnvContent -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText("$PWD/src/mcp/flight-server/.env", $mcpEnvContent, $utf8NoBom)
 
 # --- Phase 3: Write Flight Agent API .env ---
 
@@ -166,7 +167,8 @@ FOUNDRY_PROJECT_ENDPOINT=$foundryEndpoint
 OPENAPI=$openApiClientId
 "@
 
-Set-Content -Path "./src/api/flight-api/.env" -Value $apiEnvContent -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText("$PWD/src/api/flight-api/.env", $apiEnvContent, $utf8NoBom)
 
 # --- Phase 4: Summary ---
 

@@ -12,4 +12,6 @@ dependencies = [
     "fastapi-azure-auth>=5.2.0",
     "fastapi-cli>=0.0.24",
     "python-dotenv>=1.2.2",
+    "gunicorn>=23.0.0",
+    "uvicorn[standard]>=0.34.0"    
 ]

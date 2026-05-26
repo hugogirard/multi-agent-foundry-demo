@@ -15,8 +15,12 @@ class ConversationService:
         try:
             agent = self.agent_factory.create_agent(original_token=original_token)
 
-            session = agent.get_session(service_session_id=conversation.session_info.service_session_id,
-                                        session_id=conversation.session_info.session_id)
+            service_session_id = conversation.session_info.service_session_id
+            if service_session_id:
+                session = agent.get_session(service_session_id=service_session_id,
+                                            session_id=conversation.session_info.session_id)
+            else:
+                session = agent.create_session(session_id=conversation.session_info.session_id)
             logger.info("Running conversation for session %s", session.session_id)
             
             async for update in agent.run(conversation.prompt, session=session, stream=True):            

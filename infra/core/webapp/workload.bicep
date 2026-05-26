@@ -36,6 +36,38 @@ resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
     siteConfig: {
       appSettings: [
         {
+          name: 'AZURE_CLIENT_ID'
+          value: ''
+        }
+        {
+          name: 'CLIENT_ID'
+          value: ''
+        }
+        {
+          name: 'TENANT_ID'
+          value: tenant().tenantId
+        }
+        {
+          name: 'SCOPE_URI'
+          value: 'api://${flightAgentApiResourceName}/user_impersonation'
+        }
+        {
+          name: 'AGENT_NAME'
+          value: 'FlightBookingAgent'
+        }
+        {
+          name: 'AGENT_VERSION'
+          value: ''
+        }
+        {
+          name: 'FOUNDRY_PROJECT_ENDPOINT'
+          value: ''
+        }
+        {
+          name: 'OPENAPI'
+          value: ''
+        }
+        {
           name: 'DOCKER_REGISTRY_SERVER_URL'
           value: 'https://${acr.properties.loginServer}'
         }
