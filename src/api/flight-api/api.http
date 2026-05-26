@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:8000/api
+@token = {{$dotenv %BEARER_TOKEN}}
+
+### Create a new session
+# @name newSession
+GET {{baseUrl}}/session/new
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Store session IDs from the response
+@sessionId = {{newSession.response.body.sessionId}}
+@serviceSessionId = {{newSession.response.body.serviceSessionId}}
+
+### Send a conversation message (new session)
+POST {{baseUrl}}/conversation/
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+    "prompt": "Give me all flights to Paris",
+    "answer": "string",
+    "sessionInfo": {
+        "sessionId": "{{sessionId}}"
+    }
+}
+
+### Send a follow-up message (existing session)
+POST {{baseUrl}}/conversation/
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+    "prompt": "Book the cheapest one",
+    "answer": "string",
+    "sessionInfo": {
+        "sessionId": "{{sessionId}}",
+        "serviceSessionId": "{{serviceSessionId}}"
+    }
+}
+
+### Search flights by destination country
+POST {{baseUrl}}/conversation/
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+    "prompt": "Show me all flights to France",
+    "answer": "string",
+    "sessionInfo": {
+        "sessionId": "{{sessionId}}"
+    }
+}

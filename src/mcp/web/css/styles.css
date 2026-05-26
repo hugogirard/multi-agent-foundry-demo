@@ -1,0 +1,89 @@
+/* =============================================
+   Contoso Travel Agency — Layout & Structure
+   ============================================= */
+
+/* App shell layout */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* On desktop: header on top, sidebar + main side-by-side */
+@media (min-width: 768px) {
+    #app {
+        display: grid;
+        grid-template-areas:
+            "header header"
+            "sidebar main";
+        grid-template-columns: 260px 1fr;
+        grid-template-rows: 60px 1fr;
+    }
+
+    .contoso-header {
+        grid-area: header;
+    }
+
+    .contoso-sidebar {
+        grid-area: sidebar;
+    }
+
+    .main-content {
+        grid-area: main;
+    }
+}
+
+/* On mobile: stacked layout */
+@media (max-width: 767px) {
+    #app {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .contoso-header {
+        flex-shrink: 0;
+    }
+
+    .main-content {
+        flex: 1;
+        min-height: 0;
+    }
+}
+
+/* Main content area */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+/* Chat container */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Message list — scrollable */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+}
+
+/* Input area pinned to bottom */
+.chat-input-area {
+    flex-shrink: 0;
+}
+
+/* Smooth scroll for programmatic scrolling */
+.chat-messages {
+    scrollbar-gutter: stable;
+}

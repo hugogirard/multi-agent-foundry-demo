@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contoso Travel Agency — AI Booking Agent</title>
+
+    <!-- Favicon (inline SVG data URI) -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <!-- Google Fonts — Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- App mount point -->
+    <div id="app">
+        <!-- Loading state (replaced by AppShell on boot) -->
+        <div
+            style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;">
+            <div
+                style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#6C3CE1,#FF2D87,#FF8C42);animation:spin 1.2s linear infinite;">
+            </div>
+            <span style="color:#A7A9BE;font-size:14px;font-family:Inter,sans-serif;">Loading Contoso Travel...</span>
+        </div>
+        <style>
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg)
+                }
+            }
+        </style>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- External libraries (CDN)                      -->
+    <!-- ============================================= -->
+
+    <!-- MSAL.js 2.x — Azure AD authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+
+    <!-- marked.js — Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+    <!-- ============================================= -->
+    <!-- App scripts (loaded in dependency order)      -->
+    <!-- ============================================= -->
+
+    <!-- Namespace -->
+    <script>window.Contoso = window.Contoso || {};</script>
+
+    <!-- Config -->
+    <script src="js/config.js"></script>
+
+    <!-- Models -->
+    <script src="js/models/Message.js"></script>
+    <script src="js/models/Session.js"></script>
+    <script src="js/models/Conversation.js"></script>
+
+    <!-- Repositories -->
+    <script src="js/repositories/SessionRepository.js"></script>
+    <script src="js/repositories/ChatRepository.js"></script>
+
+    <!-- Services -->
+    <script src="js/services/AuthService.js"></script>
+    <script src="js/services/ChatService.js"></script>
+
+    <!-- Components -->
+    <script src="js/components/HeaderComponent.js"></script>
+    <script src="js/components/SidebarComponent.js"></script>
+    <script src="js/components/WelcomeComponent.js"></script>
+    <script src="js/components/MessageComponent.js"></script>
+    <script src="js/components/ChatComponent.js"></script>
+    <script src="js/components/AppShell.js"></script>
+
+    <!-- App bootstrap (must be last) -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>
