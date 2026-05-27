@@ -1,6 +1,5 @@
 /* ============================================
-   Contoso Bank – Login Component Styles
-   Angular component: app-login
+   Contoso Travel – Login Page (Sunset Theme)
    ============================================ */
 
 .login-page {
@@ -8,133 +7,159 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 50%, #2b88d8 100%);
+    background: var(--ct-bg);
     position: relative;
     overflow: hidden;
+    font-family: 'Inter', var(--font-family);
 }
 
-/* Decorative background shapes */
-.login-page::before {
-    content: "";
+/* ---- Floating decorative orbs ---- */
+.login-orb {
     position: absolute;
-    width: 600px;
-    height: 600px;
-    background: rgba(255, 255, 255, 0.04);
     border-radius: 50%;
-    top: -200px;
-    right: -100px;
+    pointer-events: none;
+    filter: blur(80px);
+    opacity: 0.5;
 }
 
-.login-page::after {
-    content: "";
-    position: absolute;
+.login-orb-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(108, 60, 225, 0.4), transparent 70%);
+    top: -150px;
+    right: -100px;
+    animation: orbFloat1 12s ease-in-out infinite;
+}
+
+.login-orb-2 {
     width: 400px;
     height: 400px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 50%;
-    bottom: -150px;
-    left: -100px;
+    background: radial-gradient(circle, rgba(255, 45, 135, 0.3), transparent 70%);
+    bottom: -120px;
+    left: -80px;
+    animation: orbFloat2 15s ease-in-out infinite;
 }
 
+.login-orb-3 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 140, 66, 0.25), transparent 70%);
+    top: 50%;
+    left: 60%;
+    animation: orbFloat3 10s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-30px, 40px) scale(1.1); }
+}
+
+@keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.05); }
+}
+
+@keyframes orbFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-20px, -20px) scale(0.95); }
+}
+
+/* ---- Card ---- */
 .login-card {
     position: relative;
     z-index: 1;
-    background: var(--neutral-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-64);
+    background: var(--ct-surface);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--ct-radius-lg);
+    box-shadow: var(--ct-shadow-lg), var(--ct-shadow-glow);
     width: 100%;
-    max-width: 420px;
-    padding: 40px 36px;
-    margin: var(--spacing-l);
+    max-width: 440px;
+    padding: 48px 40px;
+    margin: 16px;
+    text-align: center;
+    animation: cardFadeIn 0.6s ease-out;
 }
 
+@keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Brand ---- */
 .login-brand {
     display: flex;
     align-items: center;
-    gap: var(--spacing-m);
-    margin-bottom: var(--spacing-xxxl);
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 8px;
 }
 
 .login-brand-icon {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 36px;
+    background: var(--ct-gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-.login-brand-icon img {
-    width: 40px;
-    height: 40px;
-}
-
-.login-brand-icon svg {
-    width: 24px;
-    height: 24px;
-    fill: var(--neutral-white);
-}
-
-.login-brand-text h1 {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--neutral-gray-130);
+.login-brand-text {
+    font-size: 28px;
+    font-weight: 800;
+    background: var(--ct-gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     line-height: 1.2;
 }
 
-.login-brand-text p {
-    font-size: var(--font-size-sm);
-    color: var(--neutral-gray-60);
-    margin-top: 2px;
+.login-tagline {
+    font-size: 15px;
+    color: var(--ct-text-secondary);
+    margin-bottom: 36px;
 }
 
+/* ---- Form area ---- */
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xl);
-}
-
-.login-field {
-    display: flex;
-    flex-direction: column;
-}
-
-.login-field .input-field {
-    min-height: 40px;
-    font-size: var(--font-size-base);
+    gap: 24px;
 }
 
 .login-subtitle {
-    font-size: var(--font-size-base);
-    color: var(--neutral-gray-80);
-    line-height: 1.5;
-    margin-bottom: var(--spacing-l);
+    font-size: 14px;
+    color: var(--ct-text-muted);
+    line-height: 1.6;
 }
 
+/* ---- Sign-in button ---- */
 .login-entra-btn {
     width: 100%;
-    min-height: 44px;
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    background: var(--neutral-white);
-    color: var(--neutral-gray-100);
-    border: 1px solid var(--neutral-gray-40);
-    border-radius: var(--radius-md);
+    min-height: 48px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', var(--font-family);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ct-text);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--ct-radius-md);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-m);
-    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    gap: 12px;
+    transition: var(--ct-transition);
 }
 
 .login-entra-btn:hover {
-    background: var(--neutral-gray-10);
-    border-color: var(--neutral-gray-80);
-    box-shadow: var(--shadow-4);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--ct-primary);
+    box-shadow: var(--ct-shadow-glow);
+    transform: translateY(-1px);
 }
 
 .login-entra-btn:active {
-    background: var(--neutral-gray-20);
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.14);
 }
 
 .login-entra-icon {
@@ -143,68 +168,34 @@
     flex-shrink: 0;
 }
 
-.login-error {
-    display: none;
-    align-items: center;
-    gap: var(--spacing-s);
-    background: #fde7e8;
-    color: var(--color-danger);
-    font-size: var(--font-size-sm);
-    padding: var(--spacing-s) var(--spacing-m);
-    border-radius: var(--radius-md);
-    border: 1px solid #f1c0c2;
-}
-
-.login-error.visible {
-    display: flex;
-}
-
-.login-error svg {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    fill: var(--color-danger);
-}
-
+/* ---- Footer ---- */
 .login-footer {
-    text-align: center;
-    margin-top: var(--spacing-xxl);
-    font-size: var(--font-size-sm);
-    color: var(--neutral-gray-60);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 32px;
+    font-size: 12px;
+    color: var(--ct-text-muted);
 }
 
-.login-footer a {
-    color: var(--brand-primary);
-    font-weight: var(--font-weight-semibold);
+.login-footer-icon {
+    font-size: 14px;
+    color: var(--ct-teal);
 }
 
-.login-spinner {
-    display: none;
-}
+/* ---- Responsive ---- */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 36px 24px;
+        margin: 12px;
+    }
 
-.login-spinner.visible {
-    display: inline-block;
-}
+    .login-brand-text {
+        font-size: 22px;
+    }
 
-/* Demo credentials hint */
-.login-demo-hint {
-    background: var(--neutral-gray-10);
-    border: 1px solid var(--neutral-gray-30);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-m);
-    margin-top: var(--spacing-xl);
-    font-size: var(--font-size-sm);
-    color: var(--neutral-gray-80);
-}
-
-.login-demo-hint strong {
-    color: var(--neutral-gray-100);
-}
-
-.login-demo-hint code {
-    background: var(--neutral-gray-20);
-    padding: 1px 6px;
-    border-radius: var(--radius-sm);
-    font-family: "Cascadia Code", Consolas, monospace;
-    font-size: var(--font-size-sm);
+    .login-brand-icon {
+        font-size: 28px;
+    }
 }

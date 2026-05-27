@@ -1,7 +1,6 @@
 import { Injectable } from "@angular/core";
-import { Message, Role } from "../model/message";
-import { Observable, of, delay } from "rxjs";
-import { HttpClient, HttpEvent, HttpEventType } from "@angular/common/http";
+import { Observable } from "rxjs";
+import { HttpClient, HttpEvent } from "@angular/common/http";
 import { environment } from "../environments/environment";
 import { Conversation } from "../model/conversation";
 import { Session } from "../model/session";
@@ -9,10 +8,9 @@ import { Session } from "../model/session";
 @Injectable({
     providedIn: 'root'
 })
-export class FraudService {
+export class TravelService {
 
     constructor(private http: HttpClient) {
-
     }
 
     askQuestion(prompt: string, sessionInfo: Session | null): Observable<HttpEvent<string>> {

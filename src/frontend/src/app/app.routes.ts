@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { LoginPage } from './pages/login/login';
-import { FraudPage } from './pages/fraud/fraud';
+import { TravelPage } from './pages/travel/travel';
 import { MsalGuard } from '@azure/msal-angular';
 
 export const routes: Routes = [
@@ -9,8 +9,8 @@ export const routes: Routes = [
         component: LoginPage,
     },
     {
-        path: 'fraud',
-        component: FraudPage,
+        path: 'travel',
+        component: TravelPage,
         canActivate: [MsalGuard]
     },
 ];

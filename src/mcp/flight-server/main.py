@@ -4,10 +4,21 @@ from fastmcp.server.auth.providers.azure import AzureProvider
 from fastmcp.server.auth.providers.jwt import JWTVerifier
 from fastmcp.server.auth.auth import MultiAuth
 from fastmcp.server.dependencies import get_access_token
+from starlette.applications import Starlette
+from starlette.routing import Mount
 from tools import flight_mcp
 from pathlib import Path
 from config import Config
+import uvicorn
 
+instructions="""Flight booking server that searches available flights between 
+                Canadian cities and European destinations, reserves seats 
+                by flight ID, and cancels reservations by reservation ID — 
+                all prices in CAD per person."""
+
+providers=[
+    FileSystemProvider(Path(__file__).parent / "tools") # Browse directory to retrieve all configured tools
+]
 
 # OAuth Proxy for interactive clients (e.g., VS Code)
 azure_proxy = AzureProvider(
@@ -34,16 +45,17 @@ auth_provider = MultiAuth(
     verifiers=[azure_jwt_verifier]
 )
 
+# --- MCP (JWT only, no OAuth discovery) ---
 mcp = FastMCP("Flight MCP Server",
-              instructions="""Flight booking server that searches available flights between 
-                              Canadian cities and European destinations, reserves seats 
-                              by flight ID, and cancels reservations by reservation ID — 
-                              all prices in CAD per person.""",
-             providers=[
-                 FileSystemProvider(Path(__file__).parent / "tools") # Browse directory to retrieve all configured tools
-             ],
-             auth=auth_provider)
+              instructions=instructions,
+              providers=providers,
+              auth=azure_jwt_verifier)
 
+# --- MCP for VS Code, Claude, other client (full OAuth + JWT) ---
+mcp_oauth_discovery = FastMCP("Flight MCP Server",
+                               instructions=instructions,
+                               providers=providers,
+                               auth=auth_provider)
 
 # Endpoint to test the authenticated user info only
 @mcp.tool()
@@ -60,7 +72,13 @@ async def get_user_info() -> dict:
 
 #mcp.include_router(reservation_mcp)
 
-app = mcp.http_app()
+#app = mcp.http_app()
+
+app = Starlette(routes=[
+    Mount('/mcp', app=mcp.http_app(transport='http')),
+    Mount('/mcp-oauth', app=mcp_oauth_discovery.http_app(transport='http'))
+])
 
 if __name__ == "__main__":
-    mcp.run(transport='http',port=9000)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
+    #mcp.run(transport='http',port=9000)

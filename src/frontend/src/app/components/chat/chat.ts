@@ -1,11 +1,9 @@
-import { Component, input, signal, effect, afterRenderEffect, ViewChild, ElementRef } from "@angular/core";
+import { Component, input, signal, afterRenderEffect, ViewChild, ElementRef } from "@angular/core";
 import { Session } from "../../model/session";
 import { Loading } from "../loading/loading";
 import { MsalService } from "@azure/msal-angular";
 import { MessageStore } from "../../stores/message.store";
 import { RemarkModule } from "ngx-remark";
-
-
 
 @Component({
     selector: 'chat-pane',
@@ -19,17 +17,16 @@ export class Chat {
     session = input<Session>();
     isLoading = signal(false);
     isTyping = signal(false);
+    showWelcome = signal(true);
     username: string | null = null;
     initial: string | null = null;
     userMessage = signal('');
-    @ViewChild('chatInput') chatInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('chatInput') chatInput!: ElementRef<HTMLTextAreaElement>;
 
     readonly loadingTitle = 'Loading conversation';
 
     constructor(public messageStore: MessageStore, private authService: MsalService) {
 
-        // Auto-scroll chat to bottom: tracks messages() and streamingContent() signals,
-        // then runs after DOM update to keep the latest content visible.
         afterRenderEffect(() => {
             this.messageStore.messages();
             this.messageStore.streamingContent();
@@ -37,22 +34,12 @@ export class Chat {
             if (el) el.scrollTop = el.scrollHeight;
         });
 
-        effect((onCleanup) => {
-            const s = this.session();
-            if (s && s.sessionId != '') {
-                // Set default message but show ... like someone is typing
-                this.isTyping.set(true);
-                const timer = setTimeout(() => {
-                    this.isTyping.set(false);
-                    this.messageStore.addWelcomeMessage();
-                }, 2000);
-                onCleanup(() => clearTimeout(timer));
-            }
-        });
+
     }
 
     onNewChat() {
         this.isLoading.set(true);
+        this.showWelcome.set(true);
         this.messageStore.newSession().subscribe({
             next: () => this.isLoading.set(false),
             error: () => this.isLoading.set(false)
@@ -67,17 +54,48 @@ export class Chat {
             if (elements.length >= 2) {
                 const firstLetter = elements[0][0];
                 const lastLetter = elements[elements.length - 1][0];
-                this.initial = `${firstLetter}${lastLetter}`
+                this.initial = `${firstLetter}${lastLetter}`;
             }
         }
     }
 
+    onSuggestionClick(prompt: string) {
+        this.showWelcome.set(false);
+        this.userMessage.set(prompt);
+        this.onSend();
+    }
+
+    onInput(event: Event) {
+        const textarea = event.target as HTMLTextAreaElement;
+        this.userMessage.set(textarea.value);
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    }
+
+    onKeydown(event: KeyboardEvent) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.onSend();
+        }
+    }
+
     onSend() {
-        if (!this.messageStore.isStreaming()) {
-            this.messageStore.sendMessage(this.userMessage());
-            this.userMessage.set('');;
+        const msg = this.userMessage().trim();
+        if (!msg || this.messageStore.isStreaming()) return;
+
+        this.showWelcome.set(false);
+        this.messageStore.sendMessage(msg);
+        this.userMessage.set('');
+
+        if (this.chatInput?.nativeElement) {
+            this.chatInput.nativeElement.style.height = 'auto';
             this.chatInput.nativeElement.focus();
         }
+    }
+
+    formatTime(date: Date | undefined): string {
+        if (!date) return '';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     logout() {

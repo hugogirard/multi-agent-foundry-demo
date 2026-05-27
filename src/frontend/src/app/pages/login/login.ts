@@ -15,14 +15,14 @@ export class LoginPage {
 
     ngOnInit() {
         if (this.authService.instance.getActiveAccount() || this.authService.instance.getAllAccounts().length > 0) {
-            this.router.navigate(['/fraud']);
+            this.router.navigate(['/travel']);
         }
     }
 
     login() {
         // Check if user is already logged in
         if (this.authService.instance.getActiveAccount() || this.authService.instance.getAllAccounts().length > 0) {
-            this.router.navigate(['/fraud']);
+            this.router.navigate(['/travel']);
             return;
         }
 

@@ -1,6 +1,6 @@
 /* ============================================
-   Contoso Bank – Global / Shared Styles
-   Fluent UI–inspired design tokens & resets
+   Contoso Travel – Global / Shared Styles
+   Fluent UI + Sunset theme design tokens & resets
    ============================================ */
 
 /* --- Fluent Design Tokens --- */
@@ -65,6 +65,54 @@
     --radius-lg: 8px;
     --radius-xl: 12px;
     --radius-round: 50%;
+
+    /* --- Contoso Travel Sunset Theme --- */
+    /* Sunset gradient palette */
+    --ct-primary: #6C3CE1;
+    --ct-primary-dark: #4A1FB8;
+    --ct-secondary: #FF2D87;
+    --ct-accent: #FF8C42;
+    --ct-teal: #00D4AA;
+    --ct-teal-dark: #00B894;
+    --ct-cyan: #00C9DB;
+
+    /* Surfaces */
+    --ct-bg: #0F0E17;
+    --ct-bg-secondary: #1A1932;
+    --ct-surface: #232147;
+    --ct-surface-light: #2D2B55;
+    --ct-surface-hover: #36345F;
+
+    /* Text */
+    --ct-text: #FFFFFE;
+    --ct-text-secondary: #A7A9BE;
+    --ct-text-muted: #72738C;
+
+    /* Chat bubbles */
+    --ct-user-bubble: linear-gradient(135deg, #6C3CE1, #FF2D87);
+    --ct-assistant-bubble: #232147;
+    --ct-error-bubble: #FF4757;
+
+    /* Gradients */
+    --ct-gradient-hero: linear-gradient(135deg, #6C3CE1 0%, #FF2D87 50%, #FF8C42 100%);
+    --ct-gradient-header: linear-gradient(90deg, #1A1932, #232147);
+    --ct-gradient-glow: radial-gradient(circle, rgba(108, 60, 225, 0.3) 0%, transparent 70%);
+
+    /* Shadows */
+    --ct-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --ct-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --ct-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+    --ct-shadow-glow: 0 0 30px rgba(108, 60, 225, 0.3);
+
+    /* Radii */
+    --ct-radius-sm: 8px;
+    --ct-radius-md: 12px;
+    --ct-radius-lg: 20px;
+    --ct-radius-xl: 28px;
+
+    /* Transitions */
+    --ct-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --ct-transition-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 
 /* --- Reset & Base --- */
@@ -82,9 +130,32 @@ body {
     font-family: var(--font-family);
     font-size: var(--font-size-base);
     color: var(--neutral-gray-100);
-    background: var(--neutral-gray-20);
+    background: var(--ct-bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+}
+
+::selection {
+    background: rgba(108, 60, 225, 0.5);
+    color: #fff;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ct-surface-light);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ct-text-muted);
 }
 
 a {

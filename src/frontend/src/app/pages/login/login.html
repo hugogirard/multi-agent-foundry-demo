@@ -1,38 +1,33 @@
-<div id="login-page" class="login-page">
-    <div class="login-card">
+<div class="login-page">
+    <!-- Decorative floating shapes -->
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+    <div class="login-orb login-orb-3"></div>
 
+    <div class="login-card">
         <!-- Brand -->
         <div class="login-brand">
-            <div class="login-brand-icon">
-                <img src="images/shield.svg" alt="Bank icon" />
-            </div>
-            <div class="login-brand-text">
-                <h1>Contoso Bank</h1>
-                <p>Fraud Alert Assistant</p>
-            </div>
+            <span class="material-icons login-brand-icon">flight_takeoff</span>
+            <h1 class="login-brand-text">Contoso Travel</h1>
         </div>
 
-        <!-- Entra ID Login (Angular: MSAL redirect) -->
+        <p class="login-tagline">Your AI-powered travel booking assistant</p>
+
+        <!-- Sign-in -->
         <div class="login-form">
-            <p class="login-subtitle">Sign in to access your fraud alert notifications and chat with our AI
-                assistant.</p>
+            <p class="login-subtitle">Sign in to search flights, make reservations, and chat with our AI travel
+                agent.</p>
 
-            <!-- Error banner -->
-            <div id="login-error" class="login-error" role="alert">
-                <img src="images/error-icon.svg" alt="Error icon" />
-                <span id="login-error-text"></span>
-            </div>
-
-            <button id="login-btn" class="btn login-entra-btn" type="button" (click)="login()">
+            <button class="login-entra-btn" type="button" (click)="login()">
                 <img class="login-entra-icon" src="images/microsoft-logo.svg" alt="Microsoft logo" />
-                <span id="login-btn-text">Sign in with Microsoft</span>
-                <span class="spinner login-spinner" id="login-spinner"></span>
+                <span>Sign in with Microsoft</span>
             </button>
         </div>
 
         <!-- Footer -->
         <div class="login-footer">
-            <p>Protected by Microsoft Entra ID</p>
+            <span class="material-icons login-footer-icon">shield</span>
+            <span>Protected by Microsoft Entra ID</span>
         </div>
     </div>
 </div>

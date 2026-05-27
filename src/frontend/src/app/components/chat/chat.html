@@ -2,87 +2,147 @@
 
     <loading [isLoading]="isLoading()" [title]="loadingTitle" />
 
-    <!-- Chat Header -->
-    <div id="chat-header" class="chat-header">
-        <div class="chat-header-title">
-            <div class="chat-brand">
-                <div class="chat-brand-icon">
-                    <img src="images/shield.svg" alt="Bank icon" />
+    <!-- Header -->
+    <nav class="contoso-header">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="brand">
+                    <span class="material-icons brand-icon">flight_takeoff</span>
+                    <span class="brand-text">Contoso Travel</span>
                 </div>
-                <span>Contoso Bank</span>
             </div>
-        </div>
-        <div class="chat-header-actions">
-            <div class="chat-user-info">
-                <div class="chat-user-details">
-                    <span class="chat-user-name">{{username}}</span>
+            <div class="header-right">
+                <button class="btn-new-chat" [disabled]="messageStore.isStreaming()" title="New Chat"
+                    (click)="onNewChat()">
+                    <span class="material-icons">add_comment</span>
+                    <span>New Chat</span>
+                </button>
+                <div class="user-info">
+                    <span class="user-name">{{username}}</span>
+                    <div class="user-avatar">{{initial}}</div>
                 </div>
-                <div class="chat-user-avatar">{{initial}}</div>
-                <button class="chat-logout-btn" title="Sign out" (click)="logout()">
-                    <img src="images/logout-icon.svg" alt="Sign out icon" />
-                    <span>Sign out</span>
+                <button class="btn-auth" title="Sign out" (click)="logout()">
+                    <span class="material-icons">logout</span>
+                    <span>Sign Out</span>
                 </button>
             </div>
         </div>
-    </div>
+    </nav>
 
-    <!-- Messages -->
-    <div id="chat-messages" class="chat-messages">
+    <!-- Main content -->
+    <div class="main-content">
 
-        <!-- Message list -->
-        <div id="message-list">
-            @for (msg of messageStore.messages(); track $index) {
-            <div class="message" [class.bot]="msg.role === 'assistant'" [class.user]="msg.role === 'user'">
-                <div class="message-avatar">{{ msg.role === 'assistant' ? 'CB' : initial }}</div>
-                <div class="message-content">
-                    <div class="message-bubble" [class.message-error]="msg.isError">
-                        @if (msg.role === 'assistant') {
-                        <remark [markdown]="msg.content"></remark>
+        <!-- Welcome Screen (shown before first message) -->
+        @if (showWelcome()) {
+        <div class="chat-messages">
+            <div class="welcome-container">
+                <div class="welcome-hero">
+                    <div class="welcome-globe">
+                        <span class="material-icons welcome-icon">travel_explore</span>
+                    </div>
+                    <h1 class="welcome-title">Where do you want to go?</h1>
+                    <p class="welcome-subtitle">
+                        I'm your AI travel agent. Ask me about flights, hotels, activities — or let me plan your entire
+                        trip!
+                    </p>
+                    <div class="welcome-suggestions">
+                        <button class="suggestion-chip"
+                            (click)="onSuggestionClick('Find me flights from Montreal to Paris')">
+                            <span class="material-icons">flight</span>
+                            Flights to Paris
+                        </button>
+                    </div>
+                </div>
+                <div class="welcome-decoration">
+                    <div class="floating-icon fi-1"><span class="material-icons">flight</span></div>
+                    <div class="floating-icon fi-2"><span class="material-icons">luggage</span></div>
+                    <div class="floating-icon fi-3"><span class="material-icons">beach_access</span></div>
+                    <div class="floating-icon fi-4"><span class="material-icons">photo_camera</span></div>
+                    <div class="floating-icon fi-5"><span class="material-icons">restaurant</span></div>
+                </div>
+            </div>
+        </div>
+        } @else {
+
+        <!-- Messages -->
+        <div id="chat-messages" class="chat-messages">
+            <div id="message-list">
+                @for (msg of messageStore.messages(); track $index) {
+                <div class="message" [class.message-user]="msg.role === 'user'"
+                    [class.message-assistant]="msg.role === 'assistant'" [class.message-error]="msg.isError">
+                    <div class="msg-avatar-wrap">
+                        @if (msg.role === 'user') {
+                        <span class="msg-avatar-text">{{initial}}</span>
                         } @else {
-                        {{ msg.content }}
+                        <span class="material-icons msg-avatar">smart_toy</span>
                         }
                     </div>
-                </div>
-            </div>
-            }
-
-            @if (messageStore.isStreaming() && messageStore.streamingContent()) {
-            <div class="message bot">
-                <div class="message-avatar">CB</div>
-                <div class="message-content">
-                    <div class="message-bubble" [class.message-error]="messageStore.isStreamingError()">
-                        <remark [markdown]="messageStore.streamingContent()"></remark>
+                    <div class="msg-body">
+                        <div class="msg-header">
+                            <span class="msg-sender">{{ msg.role === 'user' ? 'You' : 'Contoso Travel' }}</span>
+                            <span class="msg-time">{{ formatTime(msg.timestamp) }}</span>
+                        </div>
+                        <div class="msg-content">
+                            @if (msg.isError) {
+                            <div class="error-card">
+                                <span class="material-icons">error_outline</span>
+                                <span>{{ msg.content }}</span>
+                            </div>
+                            } @else if (msg.role === 'assistant') {
+                            <remark [markdown]="msg.content"></remark>
+                            } @else {
+                            {{ msg.content }}
+                            }
+                        </div>
                     </div>
                 </div>
+                }
+
+                @if (messageStore.isStreaming() && messageStore.streamingContent()) {
+                <div class="message message-assistant">
+                    <div class="msg-avatar-wrap">
+                        <span class="material-icons msg-avatar">smart_toy</span>
+                    </div>
+                    <div class="msg-body">
+                        <div class="msg-header">
+                            <span class="msg-sender">Contoso Travel</span>
+                        </div>
+                        <div class="msg-content" [class.message-error]="messageStore.isStreamingError()">
+                            <remark [markdown]="messageStore.streamingContent()"></remark>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+
+            <!-- Typing indicator -->
+            @if (isTyping() || (messageStore.isStreaming() && !messageStore.streamingContent())) {
+            <div class="typing-indicator visible">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
             </div>
             }
         </div>
 
-        <!-- Typing indicator -->
-        @if (isTyping() || (messageStore.isStreaming() && !messageStore.streamingContent())) {
-        <div id="typing-indicator" class="typing-indicator visible">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-        </div>
         }
-    </div>
 
-    <!-- Chat Input -->
-    <div id="chat-input-area" class="chat-input-area">
-        <div class="chat-input-wrapper">
-            <button class="chat-new-btn" [disabled]="messageStore.isStreaming()" data-tooltip="New chat"
-                title="New chat" (click)="onNewChat()">+</button>
-            <input id="chat-input" class="chat-input" rows="1" placeholder="Type your message…" [value]="userMessage()"
-                [disabled]="messageStore.isStreaming()" (input)="userMessage.set($any($event.target).value)"
-                (keydown.enter)="onSend()" aria-label="Type your message" />
-            <button id="send-btn" class="chat-send-btn" title="Send message" (click)="onSend()">
-                <img src="images/send-icon.svg" alt="Send" />
-            </button>
+        <!-- Chat Input -->
+        <div class="chat-input-area">
+            <div class="input-row">
+                <textarea #chatInput id="chatInput" class="chat-input"
+                    placeholder="Ask me about flights, hotels, activities..." rows="1" [disabled]="messageStore.isStreaming()"
+                    [value]="userMessage()" (input)="onInput($event)" (keydown)="onKeydown($event)"></textarea>
+                <button class="send-btn" [disabled]="messageStore.isStreaming()" title="Send" (click)="onSend()">
+                    <span class="material-icons">send</span>
+                </button>
+            </div>
+            <div class="input-hint">
+                <span class="material-icons">info_outline</span>
+                Contoso Travel Agent — powered by AI. Responses may be inaccurate.
+            </div>
         </div>
-        <div class="chat-input-hint">
-            Contoso Bank Fraud Assistant – powered by AI
-        </div>
+
     </div>
 
 </main>

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { patchState, signalState } from "@ngrx/signals";
-import { FraudService } from "../services/fraud.service";
+import { TravelService } from "../services/travel.service";
 import { HttpEventType } from "@angular/common/http";
 import { Message, Role } from "../model/message";
 import { SessionService } from "../services/session.service";
@@ -12,36 +12,21 @@ import { map, Observable, tap } from "rxjs";
 })
 export class MessageStore {
 
-    constructor(private fraudService: FraudService, private sessionService: SessionService) { }
+    constructor(private travelService: TravelService, private sessionService: SessionService) { }
 
     private state = signalState({
-        messages: [] as { role: string; content: string; isError?: boolean }[],
+        messages: [] as Message[],
         streamingContent: '',
         isStreaming: false,
         isStreamingError: false,
         lastSessionInfo: null as any
     });
 
-    private readonly welcomeMessage: string = 'Hi, I am the assistant for Fraud Detection at Contoso Bank. How can I help you today?';
-
     readonly messages = this.state.messages;
     readonly streamingContent = this.state.streamingContent;
     readonly isStreaming = this.state.isStreaming;
     readonly isStreamingError = this.state.isStreamingError;
-
-    addWelcomeMessage() {
-        patchState(this.state, (state) => ({
-            messages: [{ role: Role.Assistant, content: this.welcomeMessage }]
-        }));
-    }
-
-    // newChat() {
-    //     patchState(this.state, {
-    //         messages: [],
-    //         streamingContent: '',
-    //         isStreaming: false
-    //     });
-    // }
+    readonly lastSessionInfo = this.state.lastSessionInfo;
 
     newSession(): Observable<true> {
 
@@ -54,7 +39,6 @@ export class MessageStore {
 
         return this.sessionService.createNewSession().pipe(
             tap((session) => patchState(this.state, {
-                messages: [{ role: Role.Assistant, content: this.welcomeMessage }],
                 lastSessionInfo: session
             })),
             map(() => true));
@@ -63,12 +47,12 @@ export class MessageStore {
 
     sendMessage(prompt: string) {
         patchState(this.state, (state) => ({
-            messages: [...state.messages, { role: 'user', content: prompt }],
+            messages: [...state.messages, Message.createUserMessage(prompt)],
             streamingContent: '',
             isStreaming: true
         }));
 
-        this.fraudService.askQuestion(prompt, this.state.lastSessionInfo()).subscribe({
+        this.travelService.askQuestion(prompt, this.state.lastSessionInfo()).subscribe({
             next: (event) => {
                 if (event.type === HttpEventType.DownloadProgress) {
                     const rawData = (event as any).partialText;
@@ -84,8 +68,6 @@ export class MessageStore {
 
     private parseStream(raw: string) {
         try {
-            // Backend sends concatenated JSON objects: {"type":"content","text":"I"}{"type":"content","text":" can"}
-            // Split them by looking for }{ boundaries
             const jsonStrings = raw
                 .split(/(?<=\})\s*(?=\{)/)
                 .filter(s => s.trim());
@@ -120,8 +102,12 @@ export class MessageStore {
     }
 
     private finalize() {
+        const content = this.state.streamingContent();
+        const isError = this.state.isStreamingError();
+        const msg = new Message(Role.Assistant, content, isError ? 'error' : 'content');
+
         patchState(this.state, (state) => ({
-            messages: [...state.messages, { role: 'assistant', content: state.streamingContent, isError: state.isStreamingError }],
+            messages: [...state.messages, msg],
             streamingContent: '',
             isStreaming: false,
             isStreamingError: false

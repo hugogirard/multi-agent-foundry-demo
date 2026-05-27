@@ -17,7 +17,7 @@ import { MonitoringService } from './services/monitoring.service';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('Fraud');
+  protected readonly title = signal('Travel');
   private readonly _destroying$ = new Subject<void>();
   private loginDisplay: boolean = false;
   private tokenExpiration: string = '';
