@@ -8,6 +8,7 @@
         /** @param {Contoso.AuthService} authService */
         constructor(authService) {
             this._authService = authService;
+            this._onNewChat = null;
             this._el = null;
         }
 
@@ -17,15 +18,16 @@
             this._el.innerHTML = `
                 <div class="header-inner">
                     <div class="header-left">
-                        <button class="menu-toggle" id="menuToggle" title="Menu">
-                            <span class="material-icons">menu</span>
-                        </button>
                         <div class="brand">
                             <span class="material-icons brand-icon">flight_takeoff</span>
                             <span class="brand-text">Contoso Travel</span>
                         </div>
                     </div>
                     <div class="header-right">
+                        <button class="btn-new-chat" id="btnNewChat" disabled title="New Chat">
+                            <span class="material-icons">add_comment</span>
+                            <span class="btn-new-chat-text">New Chat</span>
+                        </button>
                         <div class="user-info" id="userInfo" style="display:none">
                             <span class="material-icons user-avatar">account_circle</span>
                             <span class="user-name" id="userName"></span>
@@ -40,11 +42,23 @@
 
             this._bindEvents();
             this._authService.onAuthChange((signedIn, user) => this._updateAuthUI(signedIn, user));
+            this._authService.onAuthChange((signedIn) => {
+                this._el.querySelector('#btnNewChat').disabled = !signedIn;
+            });
 
             return this._el;
         }
 
+        /** @param {function():void} cb */
+        set onNewChat(cb) {
+            this._onNewChat = cb;
+        }
+
         _bindEvents() {
+            this._el.querySelector('#btnNewChat').addEventListener('click', () => {
+                if (this._onNewChat) this._onNewChat();
+            });
+
             this._el.querySelector('#btnAuth').addEventListener('click', async () => {
                 if (this._authService.isSignedIn) {
                     await this._authService.signOut();

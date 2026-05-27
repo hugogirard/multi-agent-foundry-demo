@@ -28,26 +28,6 @@
                             <span class="material-icons">flight</span>
                             Flights to Paris
                         </button>
-                        <button class="suggestion-chip" data-prompt="Search for hotels in Paris for 5 nights">
-                            <span class="material-icons">hotel</span>
-                            Hotels in Paris
-                        </button>
-                        <button class="suggestion-chip" data-prompt="What activities can I do in Paris?">
-                            <span class="material-icons">local_activity</span>
-                            Paris Activities
-                        </button>
-                        <button class="suggestion-chip" data-prompt="Find the cheapest flight from Toronto to London">
-                            <span class="material-icons">savings</span>
-                            Budget Flights
-                        </button>
-                        <button class="suggestion-chip" data-prompt="Plan a week-long trip to Rome from Toronto">
-                            <span class="material-icons">map</span>
-                            Plan a Trip
-                        </button>
-                        <button class="suggestion-chip" data-prompt="Show me direct flights to Barcelona">
-                            <span class="material-icons">airline_stops</span>
-                            Direct Flights
-                        </button>
                     </div>
                 </div>
                 <div class="welcome-decoration">

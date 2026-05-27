@@ -13,27 +13,16 @@
             this._authService = authService;
             this._chatService = chatService;
             this._header = null;
-            this._sidebar = null;
             this._chat = null;
         }
 
         mount(rootEl) {
             // Header
             this._header = new Contoso.HeaderComponent(this._authService);
-
-            // Sidebar
-            this._sidebar = new Contoso.SidebarComponent(
-                this._authService,
-                () => this._handleNewChat()
-            );
+            this._header.onNewChat = () => this._handleNewChat();
 
             // Chat
             this._chat = new Contoso.ChatComponent(this._chatService, this._authService);
-
-            // Overlay for sidebar on mobile
-            const overlay = document.createElement('div');
-            overlay.className = 'sidebar-overlay';
-            overlay.addEventListener('click', () => this._sidebar.close());
 
             // Main layout
             const main = document.createElement('main');
@@ -42,14 +31,7 @@
 
             rootEl.innerHTML = '';
             rootEl.appendChild(this._header.render());
-            rootEl.appendChild(this._sidebar.render());
-            rootEl.appendChild(overlay);
             rootEl.appendChild(main);
-
-            // Wire hamburger menu
-            document.getElementById('menuToggle').addEventListener('click', () => {
-                this._sidebar.toggle();
-            });
         }
 
         async _handleNewChat() {

@@ -5,7 +5,19 @@
     'use strict';
 
     async function boot() {
+        // 0. Load runtime config from server (apiUrl, appInsightKey)
+        await Contoso.loadConfig();
         const config = Contoso.Config;
+
+        // 0b. Initialize Application Insights (if key is available)
+        if (config.appInsightKey && window.Microsoft && Microsoft.ApplicationInsights) {
+            const snippet = new Microsoft.ApplicationInsights.ApplicationInsights({
+                config: { connectionString: config.appInsightKey }
+            });
+            snippet.loadAppInsights();
+            snippet.trackPageView();
+            window.Contoso.appInsights = snippet;
+        }
 
         // 1. Auth Service
         const authService = new Contoso.AuthService(config);

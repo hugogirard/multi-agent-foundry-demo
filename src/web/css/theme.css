@@ -225,6 +225,35 @@ body {
     font-size: 18px;
 }
 
+.btn-new-chat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ct-primary);
+    border: 1px solid transparent;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: var(--ct-radius-xl);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--ct-transition);
+}
+
+.btn-new-chat:hover {
+    background: var(--ct-primary-hover, var(--ct-primary));
+    box-shadow: var(--ct-shadow-glow);
+}
+
+.btn-new-chat:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-new-chat .material-icons {
+    font-size: 18px;
+}
+
 /* ---- Sidebar ---- */
 .contoso-sidebar {
     position: fixed;
