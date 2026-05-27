@@ -1,0 +1,30 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <!-- Base / foundation -->
+    <rect x="8" y="52" width="48" height="5" rx="1" fill="#005A9E" />
+    <!-- Floor -->
+    <rect x="10" y="48" width="44" height="4" rx="1" fill="#0078D4" />
+    <!-- Pediment (triangle roof) -->
+    <polygon points="32,8 6,26 58,26" fill="#005A9E" />
+    <!-- Pediment inner -->
+    <polygon points="32,12 11,25 53,25" fill="#0078D4" />
+    <!-- Entablature (beam under roof) -->
+    <rect x="10" y="26" width="44" height="4" rx="0.5" fill="#005A9E" />
+    <!-- Columns -->
+    <rect x="14" y="30" width="5" height="18" rx="1" fill="#ffffff" />
+    <rect x="25" y="30" width="5" height="18" rx="1" fill="#ffffff" />
+    <rect x="35" y="30" width="5" height="18" rx="1" fill="#ffffff" />
+    <rect x="45" y="30" width="5" height="18" rx="1" fill="#ffffff" />
+    <!-- Column bases -->
+    <rect x="13" y="46" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="24" y="46" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="34" y="46" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="44" y="46" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <!-- Column capitals -->
+    <rect x="13" y="29" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="24" y="29" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="34" y="29" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <rect x="44" y="29" width="7" height="2" rx="0.5" fill="#005A9E" />
+    <!-- Dollar sign -->
+    <text x="32" y="22" font-family="Arial, sans-serif" font-size="8" font-weight="bold"
+        fill="#ffffff" text-anchor="middle">$</text>
+</svg>

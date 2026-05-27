@@ -23,11 +23,46 @@
         demoBearerToken: '',
 
         // MSAL (Azure AD) settings — fill in with your app registration values
-        msal: {
-            clientId: '<YOUR_CLIENT_ID>',
-            authority: 'https://login.microsoftonline.com/<YOUR_TENANT_ID>',
-            redirectUri: window.location.origin + window.location.pathname,
-            scopes: ['<YOUR_SCOPE_URI>/user_impersonation']
+        msalConfig : {
+            auth: {
+                clientId: '',
+                authority: '',
+                redirectUri: '/',
+                postLogoutRedirectUri: '/'
+            },
+            cache: {
+                cacheLocation: 'sessionStorage', // Configures cache location. "sessionStorage" is more secure, but "localStorage" gives you SSO.
+                storeAuthStateInCookie: false, // set this to true if you have to support IE
+            },    
+            scopes: [
+
+            ],     
+            system: {
+                 loggerOptions: { 
+                    loggerCallback: (level, message, containsPii) => { 
+                        if (containsPii) {
+                            return;
+                        }
+
+                        switch (level) {
+                            case msal.LogLevel.Error:
+                                console.error(message);
+                                return;
+                            case msal.LogLevel.Info:
+                                console.info(message);
+                                return;
+                            case msal.LogLevel.Verbose:
+                                console.debug(message);
+                                return;
+                            case msal.LogLevel.Warning:
+                                console.warn(message);
+                                return;
+                            default:
+                                return;
+                        }
+                    }
+                 }
+            }
         }
     };
 
@@ -47,6 +82,17 @@
             if (data.appInsightKey) {
                 window.Contoso.Config.appInsightKey = data.appInsightKey;
             }
+
+            if (data.clientId && data.authority && data.scope) {
+                window.Contoso.Config.msalConfig.auth.clientId = data.clientId;
+                window.Contoso.Config.msalConfig.auth.authority = data.authority;
+                window.Contoso.Config.msalConfig.scopes = [
+                    data.scope
+                ];
+            } else {
+                throw new Error('Cannot find EntraID configuration');
+            }
+
         } catch (err) {
             console.warn('Failed to load /config, using defaults:', err);
         }

@@ -26,7 +26,10 @@ app.get('/', (req, res) => {
 app.get('/config',(req, res) => {
     res.json({
         apiUrl: process.env.API_URL,
-        appInsightKey: process.env.APP_INSIGHT_KEY        
+        appInsightKey: process.env.APP_INSIGHT_KEY,
+        clientId: process.env.CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${process.env.TENANT_ID}`,
+        scope: process.env.SCOPE
     });
 });
 
