@@ -49,13 +49,13 @@ auth_provider = MultiAuth(
 mcp = FastMCP("Flight MCP Server",
               instructions=instructions,
               providers=providers,
-              auth=azure_jwt_verifier)
+              auth=auth_provider)
 
 # --- MCP for VS Code, Claude, other client (full OAuth + JWT) ---
-mcp_oauth_discovery = FastMCP("Flight MCP Server",
-                               instructions=instructions,
-                               providers=providers,
-                               auth=auth_provider)
+# mcp_oauth_discovery = FastMCP("Flight MCP Server",
+#                                instructions=instructions,
+#                                providers=providers,
+#                                auth=auth_provider)
 
 # Endpoint to test the authenticated user info only
 @mcp.tool()
@@ -72,13 +72,13 @@ async def get_user_info() -> dict:
 
 #mcp.include_router(reservation_mcp)
 
-#app = mcp.http_app()
+app = mcp.http_app()
 
-app = Starlette(routes=[
-    Mount('/mcp', app=mcp.http_app(transport='http')),
-    Mount('/mcp-oauth', app=mcp_oauth_discovery.http_app(transport='http'))
-])
+# app = Starlette(routes=[
+#     Mount('/mcp', app=mcp.http_app(transport='http')),
+#     Mount('/mcp-oauth', app=mcp_oauth_discovery.http_app(transport='http'))
+# ])
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=9000)
-    #mcp.run(transport='http',port=9000)
+    #uvicorn.run(app, host="0.0.0.0", port=9000)
+    mcp.run(transport='http',port=9000)

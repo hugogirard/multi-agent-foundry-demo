@@ -73,6 +73,19 @@ module monitoring 'core/monitoring/logging.bicep' = {
     location: location
     tags: tags
     logAnalyticResourceName: '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    appInsightResourceName: '${abbrs.insightsComponents}${resourceToken}'
+  }
+}
+
+// Foundry IQ 
+
+module foundryIQ 'core/knowledgebase/kb.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    aiSearchResourceName: '${abbrs.searchSearchServices}kb-${resourceToken}'
+    storageResourceName: '${abbrs.storageStorageAccounts}kb${resourceToken}'
   }
 }
 
@@ -123,6 +136,25 @@ var requiredResourceAccess = [
     ]
   }
 ]
+
+module FoundryConnectionMCP 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Foundry MCP Flight Server'
+    appUniqueName: 'foundry-mcp-flight-server-${resourceToken}'
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+  }
+}
 
 module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
   scope: rg
@@ -219,10 +251,10 @@ module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
     appUniqueName: webapp.outputs.frontEndWebAppName
     requiredResourcceAccess: union(requiredResourceAccess, [
       {
-        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAppId: FlightAgentApi.outputs.applicationId
         resourceAccess: [
           {
-            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
             type: 'Scope'
           }
         ]
@@ -292,10 +324,13 @@ output VIRTUAL_NETWORK_RESOURCE_NAME string = bringYourOwnResource == true
   : ''
 output COSMOS_DB_NAME string = db.outputs.resourceName
 output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outputs.applicationId
+output FOUNDRY_CONNECTION_MCP_CLIENT_ID string = FoundryConnectionMCP.outputs.applicationId
 output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
 output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
 output FLIGHT_AGENT_API_WEBAPP_NAME string = webapp.outputs.flightAgentApiResourceName
+output FRONTEND_RESOURCE_NAME string = webapp.outputs.frontEndWebAppName
 output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
 output PROJECT_NAME string = foundry.outputs.projectName
 output AZURE_OPENAI_MODEL string = foundry.outputs.modelName
+output APPLICATION_INSIGHT_RESOURCE_NAME string = monitoring.outputs.appInsightResourceName

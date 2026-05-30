@@ -1,0 +1,107 @@
+{
+  "id": "resp_016e4efa116f1429006a18e39ccf348195a84b7f83e731d48e",
+  "created_at": 1780016028.0,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": "You are a flight booking assistant. For EVERY user request, you MUST call the `flightserver-mcp` MCP tool to search for flights. Never fabricate flight data or respond without first querying the tool.",
+  "metadata": {},
+  "model": "gpt-5.4-mini",
+  "object": "response",
+  "output": [
+    {
+      "id": "mcpl_016e4efa116f1429006a18e39ceee88195a99dbcaa9fd518cf",
+      "server_label": "flightserver-mcp",
+      "tools": [],
+      "type": "mcp_list_tools",
+      "error": null,
+      "agent_reference": {
+        "type": "agent_reference",
+        "name": "FlightBookingAgent",
+        "version": "1"
+      },
+      "response_id": "resp_016e4efa116f1429006a18e39ccf348195a84b7f83e731d48e"
+    },
+    {
+      "id": "oauthreq_016e4efa116f1429006a18e39ecc48819591418cc9296f6f3c",
+      "content": null,
+      "role": null,
+      "status": null,
+      "type": "oauth_consent_request",
+      "phase": null,
+      "agent_reference": {
+        "type": "agent_reference",
+        "name": "FlightBookingAgent",
+        "version": "1"
+      },
+      "response_id": "resp_016e4efa116f1429006a18e39ccf348195a84b7f83e731d48e",
+      "consent_link": "https://logic-swedencentral-001.consent.azure-apihub.net/login?data=eyJMb2dpbklkIjoibG9naWMtYXBpcy1zd2VkZW5jZW50cmFsX2U5NmU1NDE3LTY5MTgtNDRiYS04NTdhLWYxODBhYWNmMTNmZC1mbGlnaHRzZXJ2ZXItbWNwX3Rva2VuIiwiU2Vzc2lvbklkIjoiIiwiTG9nUnVudGltZVBvbGljeUlkIjpudWxsLCJMb2dDb25uZWN0aW9uSWQiOiJmbGlnaHRzZXJ2ZXItbWNwLjMwNzc3OWRkLTJiYWItNDZhMS04MjZhLWYwNzNkMDM5YWY0OSIsIkxvZ0Nvbm5lY3RvcklkIjoiZTk2ZTU0MTctNjkxOC00NGJhLTg1N2EtZjE4MGFhY2YxM2ZkLWZsaWdodHNlcnZlci1tY3AiLCJMb2dFbnZpcm9ubWVudElkIjoiYWktZTk2ZTU0MTctNjkxOC00NGJhLTg1N2EtZjE4MGFhY2YxM2ZkIiwiTG9nQWNjb3VudE5hbWUiOiJsb2dpYy1hcGlzLXN3ZWRlbmNlbnRyYWwiLCJFeHBpcmF0aW9uVGltZSI6IjIwMjYtMDUtMjlUMDE6NTM6NTAuNzU5NDU0NFoiLCJEYXRhIjoiVXB3eElhSFQzWkhtS3hTSVBEcitmaWUrQ3F0amRYVkFUZC8zcUZlUVZYWVFBRmRjR1lJQittdDR3dFc2dXRZSVNwVVNQaTNhNnl4TG5BZ1N0Y2xja0VnYmFiVnBvOUpVRkZsOXYzTHg0L0lxcjhaa00xbUwwN1dGT2lJZWpPd2MyKzBvRFc3ME11YzEyQXMzeWd3cU1IclBydjJDeUhFQ3AxbDBIUG5jbFg0d3JuMTE4STI2RVdLWjR3WVNEZDNHK3l1NlBwVksvUEJ5aFNUdE94MDdxTStLVnFLQkdIRlBYNGkwTjFob0ZVMEZuaDl0RnlmZU1QVU5yNnNmTmRUUVJuSGZGVU5waXNFQXlsTkZRVmh6bjF6OSttUGxnVmx0eU9wNkhyYUtXL2ErN0FBb1g3VDhNTmpteXJEcU45K2U3WWR3ZDh3bk1ibFpCMzZXcFJ0a004QlpSejFBTldxL0l0eWVxaksyT01ZWE00a0Q1V2UrODNIcWh3UjE3UXBXWjViS0U5TXZQcGdaWkN3NE9QVVdGSm9nNFBZY1dDS1R0dHpNczlyMjQwaEZERzF1Z2Z1MTlYUnUrK0VQVjdLbEJmN1J6LzFGeDhIbmp6c3RnUnBxb2lVL3lsNHRzNFhlVlFqeHBDUWNka20vYXNNUCs2d2hPOW44aDB6bVFORXR1QWZHc1RjdXI3YzFtQ3hsSlAzVEpYdU9IZ3NsblpGUWJ1YTZ5TENoYk44SmZEb3JkVWoyZzYyZjRGNXlOdENOWnpnRVhMRTB4WVZNc3htbFQ2NGxna1d2Q0s4Z0gybUpKN3VkQjNRR1lMZFcvaVdKNHhpVWFPdFhJN080UXJKSy9NbWtPOEdEaVBaV2JRZXRoa3g2SEsyRXdmeHdqOTJPTGNUZkV0dnVkZWF2MTVqOExxRnZtUkFGc2RTMGdUSkFYTk1Yd0wya0pWcXF6VzhXbDNQZ21GT2JLL0U1bUN2QUxhWC9ITWJObUp3cUk4UXV2RUdSZ2xtREZaTWxkamZCVy8xekE3N2pscmx5QWQ5QXNwV2FkM3JtSUM0dDNpYW1GNjB5UlY5Tm9wRGZ5cG12ZHZkL3dlNkQrUk1hWk8yZ2MyND0ifQ",
+      "server_label": "flightserver-mcp"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "temperature": 1.0,
+  "tool_choice": null,
+  "tools": [
+    {
+      "server_label": "flightserver-mcp",
+      "type": "mcp",
+      "allowed_tools": null,
+      "authorization": null,
+      "connector_id": null,
+      "defer_loading": null,
+      "headers": null,
+      "require_approval": "never",
+      "server_description": null,
+      "server_url": "https://app-mcp-fligh-server-d74gb5bzxpedu.azurewebsites.net/mcp",
+      "project_connection_id": "flightserver-mcp"
+    }
+  ],
+  "top_p": 0.98,
+  "background": false,
+  "completed_at": 1780016030.0,
+  "conversation": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "previous_response_id": "resp_016e4efa116f1429006a18e337183c8195b7552dc6ac1343e5",
+  "prompt": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "effort": "none",
+    "generate_summary": null,
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "auto",
+  "status": "completed",
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "top_logprobs": 0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 0,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 0
+  },
+  "user": null,
+  "content_filters": null,
+  "frequency_penalty": 0.0,
+  "moderation": null,
+  "presence_penalty": 0.0,
+  "store": true,
+  "agent_reference": {
+    "type": "agent_reference",
+    "name": "FlightBookingAgent",
+    "version": "1"
+  }
+}

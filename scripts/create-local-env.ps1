@@ -15,6 +15,7 @@ $resourceGroup = azd env get-value AZURE_RESOURCE_GROUP
 $mcpWebAppName = azd env get-value MCP_FLIGHT_WEBAPP_NAME
 $foundryResourceName = azd env get-value FOUNDRY_RESOURCE_NAME
 $projectName = azd env get-value PROJECT_NAME
+$appInsightName = azd env get-value APPLICATION_INSIGHT_RESOURCE_NAME
 
 Write-Host "  MCP Client ID: $mcpClientId"
 Write-Host "  Cosmos DB: $cosmosDbName"
@@ -22,6 +23,7 @@ Write-Host "  Resource Group: $resourceGroup"
 Write-Host "  MCP Web App: $mcpWebAppName"
 Write-Host "  Foundry Resource: $foundryResourceName"
 Write-Host "  Project: $projectName"
+Write-Host "  App Insights: $appInsightName"
 
 # Tenant ID
 $tenantId = (az account show --query tenantId -o tsv)
@@ -108,11 +110,16 @@ $foundryEndpoint = "https://$foundryResourceName.services.ai.azure.com/api/proje
 $apiVersion = "2025-11-15-preview"
 
 $token = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
-$agentResponse = Invoke-RestMethod `
-    -Uri "$foundryEndpoint/agents/FlightBookingAgent?api-version=$apiVersion" `
-    -Headers @{ Authorization = "Bearer $token" } `
-    -Method Get `
-    -ErrorAction SilentlyContinue
+try {
+    $agentResponse = Invoke-RestMethod `
+        -Uri "$foundryEndpoint/agents/FlightBookingAgent?api-version=$apiVersion" `
+        -Headers @{ Authorization = "Bearer $token" } `
+        -Method Get
+}
+catch {
+    Write-Host "  Could not reach Foundry API: $($_.Exception.Message)" -ForegroundColor Yellow
+    $agentResponse = $null
+}
 
 if ($agentResponse -and $agentResponse.versions.latest.version) {
     $agentVersion = $agentResponse.versions.latest.version
@@ -170,12 +177,42 @@ OPENAPI=$openApiClientId
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText("$PWD/src/api/flight-api/.env", $apiEnvContent, $utf8NoBom)
 
-# --- Phase 4: Summary ---
+# --- Phase 4: Write Angular environment.ts ---
+
+Write-Host "Writing src/frontend/src/app/environments/environment.ts..."
+
+# Retrieve App Insights connection string
+$appInsightConnectionString = az monitor app-insights component show `
+    --app $appInsightName `
+    --resource-group $resourceGroup `
+    --query "connectionString" -o tsv
+
+if (-not $appInsightConnectionString) {
+    Write-Host "  Could not retrieve App Insights connection string, leaving empty." -ForegroundColor Yellow
+    $appInsightConnectionString = ""
+}
+
+$envTsContent = @"
+export const environment = {
+    production: false,
+    clientId: '$flightApiClientId',
+    authority: 'https://login.microsoftonline.com/$tenantId',
+    apiScopes: ['$scopeUri'],
+    apiBaseUrl: 'http://localhost:8000',
+    redirectUrl: 'http://localhost:4200',
+    appInsightKey: '$appInsightConnectionString'
+}
+"@
+
+[System.IO.File]::WriteAllText("$PWD/src/frontend/src/app/environments/environment.ts", $envTsContent, $utf8NoBom)
+
+# --- Phase 5: Summary ---
 
 Write-Host "`n--- Done! ---" -ForegroundColor Green
 Write-Host "Created:"
-Write-Host "  - src/mcp/flight-server/.env (MCP Flight Server)"
-Write-Host "  - src/api/flight-api/.env    (Flight Agent API)"
+Write-Host "  - src/mcp/flight-server/.env                        (MCP Flight Server)"
+Write-Host "  - src/api/flight-api/.env                           (Flight Agent API)"
+Write-Host "  - src/frontend/src/app/environments/environment.ts  (Angular frontend)"
 Write-Host ""
 Write-Host "To run locally:"
 Write-Host "  MCP Server:  uv run --project ./src/mcp/flight-server python ./src/mcp/flight-server/main.py"

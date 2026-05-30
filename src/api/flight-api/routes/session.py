@@ -17,12 +17,17 @@ def get_new_session(agent_factory: Annotated[AgentFactory, Depends(get_agent_fac
         agent = agent_factory.create_agent(original_token=access_token)
 
         session = agent.create_session()
+        
         logger.info("New session created: %s", session.session_id)
         return SessionInfo(
             sessionId=session.session_id,
             serviceSessionId=session.service_session_id
         )
     except Exception as err:
-        logger.exception("Failed to create new session")
+        logger.exception(err)
         raise HTTPException(status_code=500,detail='Internal Server Error')
 
+
+@router.get(path='/token',dependencies=[Security(azure_scheme)])
+def get_token(access_token: Annotated[str,Depends(get_access_token)]) -> str:
+    return access_token

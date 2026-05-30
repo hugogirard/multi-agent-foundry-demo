@@ -2,15 +2,21 @@ name: azd-foundry-multi-agent
 metadata:
   template: azd-starter-bicep
 
-hooks:
-  postprovision:
-    - shell: pwsh
-      run: scripts/deploy-apps.ps1
-    - shell: pwsh
-      run: scripts/deploy-foundry-connection.ps1
-    - shell: pwsh
-      run: scripts/deploy-agent.ps1
-    - shell: pwsh
-      run: scripts/load-data.ps1
-    - shell: pwsh
-      run: scripts/grand-admin-consent.ps1
+# hooks:
+#   preprovision:
+#     - shell: pwsh
+#       run: scripts/delete-app-registrations.ps1
+#   postprovision:
+# - shell: pwsh
+#   run: scripts/deploy-apps.ps1
+# - shell: pwsh
+#   run: scripts/deploy-foundry-connection.ps1
+# - shell: pwsh
+#   run: scripts/deploy-agent.ps1
+# - shell: pwsh
+#   run: scripts/load-data.ps1
+# - shell: pwsh
+#   run: scripts/grant-admin-consent.ps1
+# postdown:
+#   - shell: pwsh
+#     run: scripts/delete-app-registrations.ps1

@@ -5,7 +5,7 @@
 $ErrorActionPreference = 'Stop'
 
 # Read values from azd env
-$clientId = azd env get-value FLIGHT_MCP_SERVER_CLIENT_ID
+$clientId = azd env get-value FOUNDRY_CONNECTION_MCP_CLIENT_ID
 $resourceGroup = azd env get-value AZURE_RESOURCE_GROUP
 $webAppName = azd env get-value MCP_FLIGHT_WEBAPP_NAME
 $foundryResourceName = azd env get-value FOUNDRY_RESOURCE_NAME
@@ -27,18 +27,22 @@ Write-Host "  Client ID: $clientId"
 Write-Host "  Tenant ID: $tenantId"
 
 # --- Create/regenerate app registration secret for Foundry connection ---
+# Uses Graph REST API instead of 'az ad app credential' which hangs in some tenants.
 
-$credentials = az ad app credential list --id $clientId | ConvertFrom-Json
-$existingSecret = $credentials | Where-Object { $_.displayName -eq "Foundry MCP Connection" }
-
-if ($existingSecret) {
-  Write-Host "Existing 'Foundry MCP Connection' credential found. Removing..."
-  az ad app credential delete --id $clientId --key-id $existingSecret.keyId
-}
+# Look up the app's object ID from its appId (clientId)
+$appLookupCredsUrl = "https://graph.microsoft.com/v1.0/applications?" + '$filter' + "=appId eq '$clientId'&" + '$select' + "=id"
+$appInfo = az rest --method GET --url $appLookupCredsUrl --query "value[0]" -o json | ConvertFrom-Json
+$appObjectId = $appInfo.id
 
 Write-Host "Creating new 'Foundry MCP Connection' credential..."
-$secretValue = az ad app credential reset --id $clientId --display-name "Foundry MCP Connection" --query "password" -o tsv
+$addBody = @{ passwordCredential = @{ displayName = "Foundry MCP Connection" } } | ConvertTo-Json -Depth 3 -Compress
+$addTmp = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($addTmp, $addBody)
+$addUrl = "https://graph.microsoft.com/v1.0/applications/$appObjectId/addPassword"
+$secretResponse = az rest --method POST --url $addUrl --body "@$addTmp" --headers "Content-Type=application/json" -o json | ConvertFrom-Json
+Remove-Item -Path $addTmp -Force -ErrorAction SilentlyContinue
 
+$secretValue = $secretResponse.secretText
 if (-not $secretValue) {
   Write-Error "Failed to create app registration secret."
   exit 1
@@ -154,11 +158,13 @@ if (-not $redirectUrl) {
 if ($redirectUrl) {
   Write-Host "Redirect URL from connection: $redirectUrl"
 
-  # Get existing web redirect URIs so we don't overwrite them
-  $existingUris = az ad app show --id $clientId --query "web.redirectUris" -o json | ConvertFrom-Json
+  # Get existing web redirect URIs via Graph REST API
+  $appWebUrl = "https://graph.microsoft.com/v1.0/applications/${appObjectId}?" + '$select' + "=web"
+  $appWebData = az rest --method GET --url $appWebUrl -o json | ConvertFrom-Json
+  $existingUris = @($appWebData.web.redirectUris)
 
   # Remove any stale global.consent.azure-apim.net redirect URIs before adding the current one
-  $filteredUris = @($existingUris | Where-Object { $_ -notlike "https://global.consent.azure-apim.net/redirect/*" })
+  $filteredUris = @($existingUris | Where-Object { $_ -and $_ -notlike "https://global.consent.azure-apim.net/redirect/*" })
   $allUris = @($filteredUris) + @($redirectUrl)
 
   # Deduplicate in case the current URL is already present
@@ -171,9 +177,19 @@ if ($redirectUrl) {
   else {
     Write-Host "Updating app registration redirect URIs (replacing stale consent URI)..."
     Write-Host "  New URIs: $($allUris -join ', ')"
-    az ad app update --id $clientId --web-redirect-uris @allUris
 
-    if ($LASTEXITCODE -ne 0) {
+    # Write JSON body to temp file to avoid PowerShell escaping issues with az rest --body
+    $patchPayload = @{ web = @{ redirectUris = $allUris } } | ConvertTo-Json -Depth 3 -Compress
+    $patchTempFile = [System.IO.Path]::GetTempFileName()
+    [System.IO.File]::WriteAllText($patchTempFile, $patchPayload)
+
+    $patchUrl = "https://graph.microsoft.com/v1.0/applications/$appObjectId"
+    az rest --method PATCH --url $patchUrl --body "@$patchTempFile" --headers "Content-Type=application/json"
+
+    $patchExitCode = $LASTEXITCODE
+    Remove-Item -Path $patchTempFile -Force -ErrorAction SilentlyContinue
+
+    if ($patchExitCode -ne 0) {
       Write-Error "Failed to update app registration with redirect URL."
       exit 1
     }

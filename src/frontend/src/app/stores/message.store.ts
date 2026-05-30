@@ -19,7 +19,11 @@ export class MessageStore {
         streamingContent: '',
         isStreaming: false,
         isStreamingError: false,
-        lastSessionInfo: null as any
+        lastSessionInfo: null as any,
+        consentPending: false,
+        consentLink: null as string | null,
+        pendingPrompt: '',
+        consentApproved: false
     });
 
     readonly messages = this.state.messages;
@@ -27,6 +31,10 @@ export class MessageStore {
     readonly isStreaming = this.state.isStreaming;
     readonly isStreamingError = this.state.isStreamingError;
     readonly lastSessionInfo = this.state.lastSessionInfo;
+    readonly consentPending = this.state.consentPending;
+    readonly consentLink = this.state.consentLink;
+
+    private consentPollTimer: ReturnType<typeof setInterval> | null = null;
 
     newSession(): Observable<true> {
 
@@ -34,7 +42,11 @@ export class MessageStore {
             messages: [],
             streamingContent: '',
             isStreaming: false,
-            lastSessionInfo: null
+            lastSessionInfo: null,
+            consentPending: false,
+            consentLink: null,
+            pendingPrompt: '',
+            consentApproved: false
         });
 
         return this.sessionService.createNewSession().pipe(
@@ -49,8 +61,73 @@ export class MessageStore {
         patchState(this.state, (state) => ({
             messages: [...state.messages, Message.createUserMessage(prompt)],
             streamingContent: '',
-            isStreaming: true
+            isStreaming: true,
+            pendingPrompt: prompt
         }));
+
+        this.travelService.askQuestion(prompt, this.state.lastSessionInfo()).subscribe({
+            next: (event) => {
+                if (event.type === HttpEventType.DownloadProgress) {
+                    const rawData = (event as any).partialText;
+                    this.parseStream(rawData);
+                }
+                if (event.type === HttpEventType.Response) {
+                    if (this.state.consentPending()) {
+                        // Don't finalize normally — waiting for consent
+                        patchState(this.state, { isStreaming: false });
+                    } else {
+                        this.finalize();
+                    }
+                }
+            },
+            error: () => patchState(this.state, { isStreaming: false })
+        });
+    }
+
+    approveConsent() {
+        const link = this.state.consentLink();
+        if (!link) return;
+
+        const popup = window.open(link, 'mcpConsent', 'width=600,height=700,scrollbars=yes');
+
+        if (!popup || popup.closed) {
+            // Popup blocked — open in new tab as fallback
+            window.open(link, '_blank');
+        }
+
+        this.consentPollTimer = setInterval(() => {
+            if (popup && popup.closed) {
+                this.clearConsentPoll();
+                patchState(this.state, {
+                    consentPending: false,
+                    consentLink: null,
+                    consentApproved: true
+                });
+                this.resendPendingMessage();
+            }
+        }, 500);
+    }
+
+    cancelConsent() {
+        this.clearConsentPoll();
+        patchState(this.state, {
+            consentPending: false,
+            consentLink: null,
+            pendingPrompt: '',
+            streamingContent: '',
+            isStreaming: false,
+            isStreamingError: false
+        });
+    }
+
+    private resendPendingMessage() {
+        const prompt = this.state.pendingPrompt();
+        if (!prompt) return;
+
+        patchState(this.state, {
+            streamingContent: '',
+            isStreaming: true
+        });
 
         this.travelService.askQuestion(prompt, this.state.lastSessionInfo()).subscribe({
             next: (event) => {
@@ -64,6 +141,13 @@ export class MessageStore {
             },
             error: () => patchState(this.state, { isStreaming: false })
         });
+    }
+
+    private clearConsentPoll() {
+        if (this.consentPollTimer) {
+            clearInterval(this.consentPollTimer);
+            this.consentPollTimer = null;
+        }
     }
 
     private parseStream(raw: string) {
@@ -86,7 +170,19 @@ export class MessageStore {
                         fulltext += obj.text;
                         patchState(this.state, { isStreamingError: true });
                     } else if (obj.type === 'session_info') {
-                        patchState(this.state, { lastSessionInfo: obj });
+                        patchState(this.state, {
+                            lastSessionInfo: {
+                                sessionId: obj.sessionId,
+                                serviceSessionId: obj.serviceSessionId
+                            }
+                        });
+
+                        if (obj.consentLink && !this.state.consentApproved()) {
+                            patchState(this.state, {
+                                consentPending: true,
+                                consentLink: obj.consentLink
+                            });
+                        }
                     }
                 } catch {
                     // Incomplete chunk, skip
@@ -110,7 +206,9 @@ export class MessageStore {
             messages: [...state.messages, msg],
             streamingContent: '',
             isStreaming: false,
-            isStreamingError: false
+            isStreamingError: false,
+            pendingPrompt: '',
+            consentApproved: false
         }));
     }
 

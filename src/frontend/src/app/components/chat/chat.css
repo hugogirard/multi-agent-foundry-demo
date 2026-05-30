@@ -35,8 +35,13 @@
 }
 
 @keyframes glowDrift {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(-100px, 100px); }
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(-100px, 100px);
+    }
 }
 
 /* ---- Header ---- */
@@ -78,8 +83,15 @@
 }
 
 @keyframes iconPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1) rotate(-5deg); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1) rotate(-5deg);
+    }
 }
 
 .brand-text {
@@ -230,9 +242,19 @@
 }
 
 @keyframes globeFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    33% { transform: translateY(-10px) rotate(3deg); }
-    66% { transform: translateY(-5px) rotate(-2deg); }
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    33% {
+        transform: translateY(-10px) rotate(3deg);
+    }
+
+    66% {
+        transform: translateY(-5px) rotate(-2deg);
+    }
 }
 
 .welcome-title {
@@ -309,18 +331,61 @@
     color: var(--ct-text);
 }
 
-.fi-1 { top: 10%; left: 5%; animation-delay: 0s; animation-duration: 25s; }
-.fi-2 { top: 20%; right: 10%; animation-delay: -5s; animation-duration: 22s; }
-.fi-3 { bottom: 20%; left: 15%; animation-delay: -10s; animation-duration: 28s; }
-.fi-4 { top: 60%; right: 20%; animation-delay: -8s; animation-duration: 24s; }
-.fi-5 { bottom: 10%; right: 5%; animation-delay: -15s; animation-duration: 30s; }
+.fi-1 {
+    top: 10%;
+    left: 5%;
+    animation-delay: 0s;
+    animation-duration: 25s;
+}
+
+.fi-2 {
+    top: 20%;
+    right: 10%;
+    animation-delay: -5s;
+    animation-duration: 22s;
+}
+
+.fi-3 {
+    bottom: 20%;
+    left: 15%;
+    animation-delay: -10s;
+    animation-duration: 28s;
+}
+
+.fi-4 {
+    top: 60%;
+    right: 20%;
+    animation-delay: -8s;
+    animation-duration: 24s;
+}
+
+.fi-5 {
+    bottom: 10%;
+    right: 5%;
+    animation-delay: -15s;
+    animation-duration: 30s;
+}
 
 @keyframes floatAround {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(30px, -20px) rotate(90deg); }
-    50% { transform: translate(-10px, -40px) rotate(180deg); }
-    75% { transform: translate(20px, -10px) rotate(270deg); }
-    100% { transform: translate(0, 0) rotate(360deg); }
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    25% {
+        transform: translate(30px, -20px) rotate(90deg);
+    }
+
+    50% {
+        transform: translate(-10px, -40px) rotate(180deg);
+    }
+
+    75% {
+        transform: translate(20px, -10px) rotate(270deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(360deg);
+    }
 }
 
 /* ---- Messages ---- */
@@ -346,8 +411,15 @@
 }
 
 @keyframes msgSlideIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .message-user {
@@ -438,6 +510,107 @@
     border-color: rgba(255, 71, 87, 0.3);
 }
 
+/* ---- Consent Banner ---- */
+.consent-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 24px;
+    padding: 16px 20px;
+    background: rgba(255, 185, 0, 0.08);
+    border: 1px solid rgba(255, 185, 0, 0.25);
+    border-radius: var(--ct-radius-md);
+    animation: consentSlideIn 0.3s ease-out;
+}
+
+@keyframes consentSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.consent-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.consent-icon {
+    font-size: 22px;
+    color: #ffb900;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.consent-text {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ct-text-secondary);
+    margin: 0;
+}
+
+.consent-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 34px;
+}
+
+.btn-consent-approve {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: var(--ct-primary);
+    border: none;
+    border-radius: var(--ct-radius-xl);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--ct-transition);
+}
+
+.btn-consent-approve:hover {
+    box-shadow: var(--ct-shadow-glow);
+    transform: translateY(-1px);
+}
+
+.btn-consent-approve .material-icons {
+    font-size: 16px;
+}
+
+.btn-consent-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--ct-radius-xl);
+    color: var(--ct-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--ct-transition);
+}
+
+.btn-consent-cancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--ct-text);
+}
+
+.btn-consent-cancel .material-icons {
+    font-size: 16px;
+}
+
 .error-card {
     display: flex;
     align-items: center;
@@ -457,9 +630,17 @@
     color: var(--ct-text);
 }
 
-.msg-content ::ng-deep h1 { font-size: 20px; }
-.msg-content ::ng-deep h2 { font-size: 17px; }
-.msg-content ::ng-deep h3 { font-size: 15px; }
+.msg-content ::ng-deep h1 {
+    font-size: 20px;
+}
+
+.msg-content ::ng-deep h2 {
+    font-size: 17px;
+}
+
+.msg-content ::ng-deep h3 {
+    font-size: 15px;
+}
 
 .msg-content ::ng-deep p {
     margin: 0 0 10px;
@@ -568,10 +749,14 @@
 }
 
 @keyframes typingBounce {
-    0%, 60%, 100% {
+
+    0%,
+    60%,
+    100% {
         transform: translateY(0);
         opacity: 0.4;
     }
+
     30% {
         transform: translateY(-8px);
         opacity: 1;

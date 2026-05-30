@@ -31,7 +31,7 @@ Write-Host "Logging into ACR: $acrName ..."
 az acr login --name $acrName
 
 Write-Host "Building image: mcp-flight-server:latest ..."
-docker build -t $imageName ./src/mcp/flight-server
+docker build -t $imageName ../src/mcp/flight-server
 
 Write-Host "Pushing image to ACR: $acrName ..."
 docker push $imageName
@@ -113,7 +113,7 @@ Write-Host "Logging into ACR: $acrName ..."
 az acr login --name $acrName
 
 Write-Host "Building image: flight-agent-api:latest ..."
-docker build -t $imageName ./src/api/flight-api
+docker build -t $imageName ../src/api/flight-api
 
 Write-Host "Pushing image to ACR: $acrName ..."
 docker push $imageName
@@ -173,11 +173,16 @@ Write-Host "Querying Foundry API for latest agent version..."
 $apiVersion = "2025-11-15-preview"
 
 $token = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
-$agentResponse = Invoke-RestMethod `
-    -Uri "$foundryEndpoint/agents/FlightBookingAgent?api-version=$apiVersion" `
-    -Headers @{ Authorization = "Bearer $token" } `
-    -Method Get `
-    -ErrorAction SilentlyContinue
+try {
+    $agentResponse = Invoke-RestMethod `
+        -Uri "$foundryEndpoint/agents/FlightBookingAgent?api-version=$apiVersion" `
+        -Headers @{ Authorization = "Bearer $token" } `
+        -Method Get
+}
+catch {
+    Write-Host "  Could not reach Foundry API: $($_.Exception.Message)" -ForegroundColor Yellow
+    $agentResponse = $null
+}
 
 if ($agentResponse -and $agentResponse.versions.latest.version) {
     $agentVersion = $agentResponse.versions.latest.version

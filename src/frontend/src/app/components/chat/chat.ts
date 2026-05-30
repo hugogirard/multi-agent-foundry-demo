@@ -93,6 +93,14 @@ export class Chat {
         }
     }
 
+    onOpenConsent() {
+        this.messageStore.approveConsent();
+    }
+
+    onCancelConsent() {
+        this.messageStore.cancelConsent();
+    }
+
     formatTime(date: Date | undefined): string {
         if (!date) return '';
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

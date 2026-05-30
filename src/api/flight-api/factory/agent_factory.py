@@ -1,5 +1,4 @@
 import logging
-from agent_framework import Agent
 from azure.identity.aio import OnBehalfOfCredential
 from agent_framework.foundry import FoundryAgent
 from config import Config

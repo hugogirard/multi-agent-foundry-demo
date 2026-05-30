@@ -98,6 +98,31 @@
                 </div>
                 }
 
+                <!-- Consent Banner -->
+                @if (messageStore.consentPending()) {
+                <div class="consent-banner">
+                    <div class="consent-content">
+                        <span class="material-icons consent-icon">warning</span>
+                        <p class="consent-text">
+                            Sign in to authorize the AI agent to use an MCP tool. If you are using a Third-Party Tool,
+                            it is a Non-Microsoft Product. Use at your own risk and subject to third-party terms and
+                            data
+                            handling practices.
+                        </p>
+                    </div>
+                    <div class="consent-actions">
+                        <button class="btn-consent-approve" (click)="onOpenConsent()">
+                            <span class="material-icons">open_in_new</span>
+                            Open consent
+                        </button>
+                        <button class="btn-consent-cancel" (click)="onCancelConsent()">
+                            <span class="material-icons">close</span>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                }
+
                 @if (messageStore.isStreaming() && messageStore.streamingContent()) {
                 <div class="message message-assistant">
                     <div class="msg-avatar-wrap">
@@ -131,8 +156,9 @@
         <div class="chat-input-area">
             <div class="input-row">
                 <textarea #chatInput id="chatInput" class="chat-input"
-                    placeholder="Ask me about flights, hotels, activities..." rows="1" [disabled]="messageStore.isStreaming()"
-                    [value]="userMessage()" (input)="onInput($event)" (keydown)="onKeydown($event)"></textarea>
+                    placeholder="Ask me about flights, hotels, activities..." rows="1"
+                    [disabled]="messageStore.isStreaming()" [value]="userMessage()" (input)="onInput($event)"
+                    (keydown)="onKeydown($event)"></textarea>
                 <button class="send-btn" [disabled]="messageStore.isStreaming()" title="Send" (click)="onSend()">
                     <span class="material-icons">send</span>
                 </button>

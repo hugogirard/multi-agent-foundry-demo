@@ -52,6 +52,19 @@ def main():
         create_url = f"{endpoint}/agents?api-version={api_version}"
         response = requests.post(create_url, headers=headers, json=agent_def)
 
+        # Handle race condition: agent was created between our GET and POST
+        if response.status_code == 409:
+            print(f"Agent '{agent_name}' already exists (409 conflict). Retrying as version update...")
+            get_response = requests.get(get_url, headers=headers)
+            if get_response.status_code == 200:
+                current = get_response.json()
+                current_version = current["versions"]["latest"]["version"]
+                print(f"  Current version: {current_version}")
+                version_url = f"{endpoint}/agents/{agent_name}/versions?api-version={api_version}"
+                response = requests.post(version_url, headers=headers, json={"definition": agent_def["definition"]})
+            else:
+                print(f"  GET still failing ({get_response.status_code}). Skipping version update.")
+
     print(f"Status: {response.status_code}")
     if response.text:
         print(json.dumps(response.json(), indent=2))
