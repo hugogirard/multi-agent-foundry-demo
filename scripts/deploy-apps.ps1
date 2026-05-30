@@ -1,8 +1,81 @@
 # deploy-apps.ps1
 # Builds and pushes both the MCP Flight Server and Flight Agent API Docker images to ACR,
 # configures their Web Apps, and sets all required app settings.
+# Uses Invoke-RestMethod for ALL Azure/Graph calls (az CLI hangs in some tenants).
 
 $ErrorActionPreference = "Stop"
+
+# --- Acquire tokens (Graph + ARM) ---
+$graphTokenJson = az account get-access-token --resource "https://graph.microsoft.com" -o json | ConvertFrom-Json
+$graphToken = $graphTokenJson.accessToken
+$graphHeaders = @{ Authorization = "Bearer $graphToken"; "Content-Type" = "application/json" }
+
+$armTokenJson = az account get-access-token --resource "https://management.azure.com" -o json | ConvertFrom-Json
+$armToken = $armTokenJson.accessToken
+$armHeaders = @{ Authorization = "Bearer $armToken"; "Content-Type" = "application/json" }
+
+$subscriptionId = $armTokenJson.subscription
+
+# --- Graph API helpers ---
+
+function Add-AppSecret {
+    param([string]$AppId, [string]$SecretName)
+    $url = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$AppId'&`$select=id"
+    $app = (Invoke-RestMethod -Method GET -Uri $url -Headers $graphHeaders).value | Select-Object -First 1
+    if (-not $app) { throw "App not found: $AppId" }
+    $body = @{ passwordCredential = @{ displayName = $SecretName } } | ConvertTo-Json -Depth 3
+    $result = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/applications/$($app.id)/addPassword" -Headers $graphHeaders -Body $body
+    return $result.secretText
+}
+
+function Get-AppClientIdByName {
+    param([string]$DisplayName)
+    $encoded = [System.Uri]::EscapeDataString($DisplayName)
+    $url = "https://graph.microsoft.com/v1.0/applications?`$filter=displayName eq '$encoded'&`$select=appId,displayName"
+    $app = (Invoke-RestMethod -Method GET -Uri $url -Headers $graphHeaders).value | Where-Object { $_.displayName -eq $DisplayName } | Select-Object -First 1
+    return $app.appId
+}
+
+# --- ARM REST helpers ---
+
+function Get-AcrCredentials {
+    param([string]$ResourceGroup, [string]$AcrName)
+    $url = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.ContainerRegistry/registries/$AcrName/listCredentials?api-version=2023-07-01"
+    return Invoke-RestMethod -Method POST -Uri $url -Headers $armHeaders
+}
+
+function Set-WebAppContainerImage {
+    param([string]$ResourceGroup, [string]$WebAppName, [string]$ImageName, [string]$AcrEndpoint)
+    $url = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName/config/web?api-version=2023-12-01"
+    $body = @{
+        properties = @{
+            linuxFxVersion             = "DOCKER|$ImageName"
+            acrUseManagedIdentityCreds = $false
+        }
+    } | ConvertTo-Json -Depth 5
+    Invoke-RestMethod -Method PATCH -Uri $url -Headers $armHeaders -Body $body | Out-Null
+}
+
+function Set-WebAppSettings {
+    param([string]$ResourceGroup, [string]$WebAppName, [hashtable]$Settings)
+    # GET existing settings first so we merge, not replace
+    $listUrl = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName/config/appsettings/list?api-version=2023-12-01"
+    $existing = Invoke-RestMethod -Method POST -Uri $listUrl -Headers $armHeaders
+    $merged = @{}
+    if ($existing.properties) {
+        $existing.properties.PSObject.Properties | ForEach-Object { $merged[$_.Name] = $_.Value }
+    }
+    foreach ($key in $Settings.Keys) { $merged[$key] = $Settings[$key] }
+    $putUrl = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName/config/appsettings?api-version=2023-12-01"
+    $body = @{ properties = $merged } | ConvertTo-Json -Depth 5
+    Invoke-RestMethod -Method PUT -Uri $putUrl -Headers $armHeaders -Body $body | Out-Null
+}
+
+function Restart-WebApp {
+    param([string]$ResourceGroup, [string]$WebAppName)
+    $url = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName/restart?api-version=2023-12-01"
+    Invoke-RestMethod -Method POST -Uri $url -Headers $armHeaders | Out-Null
+}
 
 # ============================================================
 # PART 1 — MCP Flight Server
@@ -27,11 +100,12 @@ Write-Host "Image: $imageName"
 
 # --- Build and push Docker image to ACR ---
 
-Write-Host "Logging into ACR: $acrName ..."
-az acr login --name $acrName
+Write-Host "Logging into ACR via docker login ..."
+$acrCreds = Get-AcrCredentials -ResourceGroup $resourceGroup -AcrName $acrName
+$acrCreds.passwords[0].value | docker login $acrEndpoint -u $acrCreds.username --password-stdin
 
 Write-Host "Building image: mcp-flight-server:latest ..."
-docker build -t $imageName ../src/mcp/flight-server
+docker build -t $imageName "$PSScriptRoot/../src/mcp/flight-server"
 
 Write-Host "Pushing image to ACR: $acrName ..."
 docker push $imageName
@@ -39,25 +113,12 @@ docker push $imageName
 # --- Configure Web App to use the ACR image ---
 
 Write-Host "Configuring Web App: $webAppName to use image $imageName ..."
-az webapp config container set `
-    --name $webAppName `
-    --resource-group $resourceGroup `
-    --container-image-name $imageName `
-    --container-registry-url "https://${acrEndpoint}"
+Set-WebAppContainerImage -ResourceGroup $resourceGroup -WebAppName $webAppName -ImageName $imageName -AcrEndpoint $acrEndpoint
 
-# --- Create/regenerate app registration secret ---
-
-$credentials = az ad app credential list --id $clientId | ConvertFrom-Json
-$existingSecret = $credentials | Where-Object { $_.displayName -eq "Azure Secret" }
-
-if ($existingSecret) {
-    Write-Host "Existing 'Azure Secret' credential found. Removing..."
-    az ad app credential delete --id $clientId --key-id $existingSecret.keyId
-    Write-Host "Existing credential removed."
-}
+# --- Create app registration secret via Graph API ---
 
 Write-Host "Creating new 'Azure Secret' credential..."
-$secretValue = az ad app credential reset --id $clientId --display-name "Azure Secret" --query "password" -o tsv
+$secretValue = Add-AppSecret -AppId $clientId -SecretName "Azure Secret"
 
 if (-not $secretValue) {
     Write-Error "Failed to create app registration secret."
@@ -69,16 +130,15 @@ Write-Host "Secret created successfully."
 # --- Set app settings on the Web App ---
 
 Write-Host "Setting app settings on $webAppName..."
-az webapp config appsettings set `
-    --name $webAppName `
-    --resource-group $resourceGroup `
-    --settings ENTRA_CLIENT_ID=$clientId ENTRA_CLIENT_SECRET=$secretValue `
-    --output none
+Set-WebAppSettings -ResourceGroup $resourceGroup -WebAppName $webAppName -Settings @{
+    ENTRA_CLIENT_ID     = $clientId
+    ENTRA_CLIENT_SECRET = $secretValue
+}
 
 # --- Restart the Web App ---
 
 Write-Host "Restarting Web App: $webAppName ..."
-az webapp restart --name $webAppName --resource-group $resourceGroup
+Restart-WebApp -ResourceGroup $resourceGroup -WebAppName $webAppName
 
 Write-Host "MCP Flight Server deployment complete."
 
@@ -109,11 +169,10 @@ Write-Host "Foundry Endpoint: $foundryEndpoint"
 
 # --- Build and push Docker image to ACR ---
 
-Write-Host "Logging into ACR: $acrName ..."
-az acr login --name $acrName
+# ACR login already done for Part 1 — docker credentials are cached for this session
 
 Write-Host "Building image: flight-agent-api:latest ..."
-docker build -t $imageName ../src/api/flight-api
+docker build -t $imageName "$PSScriptRoot/../src/api/flight-api"
 
 Write-Host "Pushing image to ACR: $acrName ..."
 docker push $imageName
@@ -121,16 +180,12 @@ docker push $imageName
 # --- Configure Web App to use the ACR image ---
 
 Write-Host "Configuring Web App: $webAppName to use image $imageName ..."
-az webapp config container set `
-    --name $webAppName `
-    --resource-group $resourceGroup `
-    --container-image-name $imageName `
-    --container-registry-url "https://${acrEndpoint}"
+Set-WebAppContainerImage -ResourceGroup $resourceGroup -WebAppName $webAppName -ImageName $imageName -AcrEndpoint $acrEndpoint
 
-# --- Look up app registration client IDs ---
+# --- Look up app registration client IDs via Graph API ---
 
 Write-Host "Looking up Flight Agent API app registration..."
-$flightApiClientId = az ad app list --display-name "Flight Agent API" --query "[0].appId" -o tsv
+$flightApiClientId = Get-AppClientIdByName -DisplayName "Flight Agent API"
 
 if (-not $flightApiClientId) {
     Write-Error "Could not find 'Flight Agent API' app registration."
@@ -139,7 +194,7 @@ if (-not $flightApiClientId) {
 Write-Host "  Flight Agent API Client ID: $flightApiClientId"
 
 Write-Host "Looking up OpenAPI app registration..."
-$openApiClientId = az ad app list --display-name "OpenAPI" --query "[0].appId" -o tsv
+$openApiClientId = Get-AppClientIdByName -DisplayName "OpenAPI"
 
 if (-not $openApiClientId) {
     Write-Error "Could not find 'OpenAPI' app registration."
@@ -147,19 +202,10 @@ if (-not $openApiClientId) {
 }
 Write-Host "  OpenAPI Client ID: $openApiClientId"
 
-# --- Create/regenerate Flight Agent API app registration secret ---
-
-$credentials = az ad app credential list --id $flightApiClientId | ConvertFrom-Json
-$existingSecret = $credentials | Where-Object { $_.displayName -eq "Azure Secret" }
-
-if ($existingSecret) {
-    Write-Host "Existing 'Azure Secret' credential found. Removing..."
-    az ad app credential delete --id $flightApiClientId --key-id $existingSecret.keyId
-    Write-Host "Existing credential removed."
-}
+# --- Create Flight Agent API app registration secret via Graph API ---
 
 Write-Host "Creating new 'Azure Secret' credential..."
-$secretValue = az ad app credential reset --id $flightApiClientId --display-name "Azure Secret" --query "password" -o tsv
+$secretValue = Add-AppSecret -AppId $flightApiClientId -SecretName "Azure Secret"
 
 if (-not $secretValue) {
     Write-Error "Failed to create Flight Agent API secret."
@@ -198,22 +244,19 @@ else {
 $scopeUri = "api://$webAppName/user_impersonation"
 
 Write-Host "Setting app settings on $webAppName..."
-az webapp config appsettings set `
-    --name $webAppName `
-    --resource-group $resourceGroup `
-    --settings `
-    AZURE_CLIENT_ID=$flightApiClientId `
-    CLIENT_ID=$flightApiClientId `
-    CLIENT_SECRET=$secretValue `
-    AGENT_VERSION=$agentVersion `
-    FOUNDRY_PROJECT_ENDPOINT=$foundryEndpoint `
-    OPENAPI=$openApiClientId `
-    WEBSITES_PORT=8000 `
-    --output none
+Set-WebAppSettings -ResourceGroup $resourceGroup -WebAppName $webAppName -Settings @{
+    AZURE_CLIENT_ID          = $flightApiClientId
+    CLIENT_ID                = $flightApiClientId
+    CLIENT_SECRET            = $secretValue
+    AGENT_VERSION            = $agentVersion
+    FOUNDRY_PROJECT_ENDPOINT = $foundryEndpoint
+    OPENAPI                  = $openApiClientId
+    WEBSITES_PORT            = "8000"
+}
 
 # --- Restart the Web App ---
 
 Write-Host "Restarting Web App: $webAppName ..."
-az webapp restart --name $webAppName --resource-group $resourceGroup
+Restart-WebApp -ResourceGroup $resourceGroup -WebAppName $webAppName
 
 Write-Host "Flight Agent API deployment complete."
