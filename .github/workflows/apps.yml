@@ -1,0 +1,27 @@
+name: Deploys Apps
+
+on:
+    workflow_dispatch:
+
+jobs:
+    deploy-mcp-server:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Build and Push image
+              run: |
+                  az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+                  az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t mcp-flight-server:${{ github.sha }} -t mcp-flight-server:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+              working-directory: src/mcp/flight-server
+
+            - uses: azure/webapps-deploy@v2
+              with:
+                  app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
+                  images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-flight-server:${{ github.sha }}"
