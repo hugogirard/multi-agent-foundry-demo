@@ -17,63 +17,63 @@ jobs:
 
             - run: ./scripts/delete-app-registrations.sh
 
-    # create-azure-resources:
-    #     needs: delete-app-registration
+    create-azure-resources:
+        needs: delete-app-registration
 
-    #     env:
-    #         REGION: "swedencentral"
+        env:
+            REGION: "swedencentral"
 
-    #     runs-on: ubuntu-latest
+        runs-on: ubuntu-latest
 
-    #     steps:
-    #         - uses: actions/checkout@v6
+        steps:
+            - uses: actions/checkout@v6
 
-    #         - name: Azure Login
-    #           uses: Azure/login@v3.0.0
-    #           with:
-    #               creds: ${{ secrets.AZURE_CREDENTIALS }}
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    #         - name: deploy
-    #           id: createResources
-    #           run: |
-    #               az deployment sub create \
-    #                 --location ${{ env.REGION }} \
-    #                 --name ${{ github.run_id }} \
-    #                 --template-file ./infra/main.bicep \
-    #                 --parameters ./infra/main.bicepparam \
-    #                 --query 'properties.outputs' \
-    #                 --output json > outputs.json
+            - name: deploy
+              id: createResources
+              run: |
+                  az deployment sub create \
+                    --location ${{ env.REGION }} \
+                    --name ${{ github.run_id }} \
+                    --template-file ./infra/main.bicep \
+                    --parameters ./infra/main.bicepparam \
+                    --query 'properties.outputs' \
+                    --output json > outputs.json
 
-    #               echo "AZURE_RESOURCE_GROUP=$(jq -r '.azure_resource_group.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "VIRTUAL_NETWORK_RESOURCE_NAME=$(jq -r '.virtual_network_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "COSMOS_DB_NAME=$(jq -r '.cosmos_db_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "FLIGHT_MCP_SERVER_CLIENT_ID=$(jq -r '.flight_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(jq -r '.foundry_connection_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "MCP_FLIGHT_WEBAPP_NAME=$(jq -r '.mcp_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "AZURE_CONTAINER_REGISTRY_NAME=$(jq -r '.azure_container_registry_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "BRING_YOUR_OWN_RESOURCE=$(jq -r '.bring_your_own_resource.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "FLIGHT_AGENT_API_WEBAPP_NAME=$(jq -r '.flight_agent_api_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "FRONTEND_RESOURCE_NAME=$(jq -r '.frontend_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "FOUNDRY_RESOURCE_NAME=$(jq -r '.foundry_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "PROJECT_NAME=$(jq -r '.project_name.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "AZURE_OPENAI_MODEL=$(jq -r '.azure_openai_model.value' outputs.json)" >> $GITHUB_OUTPUT
-    #               echo "APPLICATION_INSIGHT_RESOURCE_NAME=$(jq -r '.application_insight_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "AZURE_RESOURCE_GROUP=$(jq -r '.azure_resource_group.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "VIRTUAL_NETWORK_RESOURCE_NAME=$(jq -r '.virtual_network_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "COSMOS_DB_NAME=$(jq -r '.cosmos_db_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FLIGHT_MCP_SERVER_CLIENT_ID=$(jq -r '.flight_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(jq -r '.foundry_connection_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "MCP_FLIGHT_WEBAPP_NAME=$(jq -r '.mcp_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "AZURE_CONTAINER_REGISTRY_NAME=$(jq -r '.azure_container_registry_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "BRING_YOUR_OWN_RESOURCE=$(jq -r '.bring_your_own_resource.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FLIGHT_AGENT_API_WEBAPP_NAME=$(jq -r '.flight_agent_api_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FRONTEND_RESOURCE_NAME=$(jq -r '.frontend_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FOUNDRY_RESOURCE_NAME=$(jq -r '.foundry_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "PROJECT_NAME=$(jq -r '.project_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "AZURE_OPENAI_MODEL=$(jq -r '.azure_openai_model.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "APPLICATION_INSIGHT_RESOURCE_NAME=$(jq -r '.application_insight_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
 
-    #         - name: Set secrets using gh CLI
-    #           env:
-    #               GH_TOKEN: ${{ secrets.PA_TOKEN }}
-    #           run: |
-    #               gh secret set AZURE_RESOURCE_GROUP --body "${{ steps.createResources.outputs.AZURE_RESOURCE_GROUP }}"
-    #               gh secret set VIRTUAL_NETWORK_RESOURCE_NAME --body "${{ steps.createResources.outputs.VIRTUAL_NETWORK_RESOURCE_NAME }}"
-    #               gh secret set COSMOS_DB_NAME --body "${{ steps.createResources.outputs.COSMOS_DB_NAME }}"
-    #               gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
-    #               gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
-    #               gh secret set MCP_FLIGHT_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_FLIGHT_WEBAPP_NAME }}"
-    #               gh secret set AZURE_CONTAINER_REGISTRY_NAME --body "${{ steps.createResources.outputs.AZURE_CONTAINER_REGISTRY_NAME }}"
-    #               gh secret set BRING_YOUR_OWN_RESOURCE --body "${{ steps.createResources.outputs.BRING_YOUR_OWN_RESOURCE }}"
-    #               gh secret set FLIGHT_AGENT_API_WEBAPP_NAME --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_WEBAPP_NAME }}"
-    #               gh secret set FRONTEND_RESOURCE_NAME --body "${{ steps.createResources.outputs.FRONTEND_RESOURCE_NAME }}"
-    #               gh secret set FOUNDRY_RESOURCE_NAME --body "${{ steps.createResources.outputs.FOUNDRY_RESOURCE_NAME }}"
-    #               gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
-    #               gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
-    #               gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
+            - name: Set secrets using gh CLI
+              env:
+                  GH_TOKEN: ${{ secrets.PA_TOKEN }}
+              run: |
+                  gh secret set AZURE_RESOURCE_GROUP --body "${{ steps.createResources.outputs.AZURE_RESOURCE_GROUP }}"
+                  gh secret set VIRTUAL_NETWORK_RESOURCE_NAME --body "${{ steps.createResources.outputs.VIRTUAL_NETWORK_RESOURCE_NAME }}"
+                  gh secret set COSMOS_DB_NAME --body "${{ steps.createResources.outputs.COSMOS_DB_NAME }}"
+                  gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
+                  gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
+                  gh secret set MCP_FLIGHT_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_FLIGHT_WEBAPP_NAME }}"
+                  gh secret set AZURE_CONTAINER_REGISTRY_NAME --body "${{ steps.createResources.outputs.AZURE_CONTAINER_REGISTRY_NAME }}"
+                  gh secret set BRING_YOUR_OWN_RESOURCE --body "${{ steps.createResources.outputs.BRING_YOUR_OWN_RESOURCE }}"
+                  gh secret set FLIGHT_AGENT_API_WEBAPP_NAME --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_WEBAPP_NAME }}"
+                  gh secret set FRONTEND_RESOURCE_NAME --body "${{ steps.createResources.outputs.FRONTEND_RESOURCE_NAME }}"
+                  gh secret set FOUNDRY_RESOURCE_NAME --body "${{ steps.createResources.outputs.FOUNDRY_RESOURCE_NAME }}"
+                  gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
+                  gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
+                  gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
