@@ -21,6 +21,27 @@ jobs:
                   az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t mcp-flight-server:${{ github.sha }} -t mcp-flight-server:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
               working-directory: src/mcp/flight-server
 
+            - name: Generate App Secret
+              id: generate-secret
+              run: |
+                  APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
+                  SECRET=$(az rest --method POST \
+                  --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
+                  --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
+                  --query secretText -o tsv)
+                  echo "::add-mask::$SECRET"
+                  echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
+
+            - name: Set App Settings
+              uses: Azure/appservice-settings@v1
+              with:
+                  app-name: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+                  app-settings-json: |
+                      [
+                        { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}" },
+                        { "name": "ENTRA_CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" }
+                      ]
+
             - uses: azure/webapps-deploy@v2
               with:
                   app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
