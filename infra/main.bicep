@@ -318,19 +318,19 @@ module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
 }
 
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
-output AZURE_RESOURCE_GROUP string = rg.name
-output VIRTUAL_NETWORK_RESOURCE_NAME string = bringYourOwnResource == true
+output azure_resource_group string = rg.name
+output virtual_network_resource_name string = bringYourOwnResource == true
   ? virtualNetwork!.outputs.virtualNetworkResourceName
   : ''
-output COSMOS_DB_NAME string = db.outputs.resourceName
-output FLIGHT_MCP_SERVER_CLIENT_ID string = FlightMcpServerAppRegistration.outputs.applicationId
-output FOUNDRY_CONNECTION_MCP_CLIENT_ID string = FoundryConnectionMCP.outputs.applicationId
-output MCP_FLIGHT_WEBAPP_NAME string = webapp.outputs.mcpFlightWebAppName
-output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.resourceName
-output BRING_YOUR_OWN_RESOURCE bool = bringYourOwnResource
-output FLIGHT_AGENT_API_WEBAPP_NAME string = webapp.outputs.flightAgentApiResourceName
-output FRONTEND_RESOURCE_NAME string = webapp.outputs.frontEndWebAppName
-output FOUNDRY_RESOURCE_NAME string = foundry.outputs.foundryResourceName
-output PROJECT_NAME string = foundry.outputs.projectName
-output AZURE_OPENAI_MODEL string = foundry.outputs.modelName
-output APPLICATION_INSIGHT_RESOURCE_NAME string = monitoring.outputs.appInsightResourceName
+output cosmos_db_name string = db.outputs.resourceName
+output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
+output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
+output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
+output azure_container_registry_name string = containerRegistry.outputs.resourceName
+output bring_your_own_resource bool = bringYourOwnResource
+output flight_agent_api_webapp_name string = webapp.outputs.flightAgentApiResourceName
+output frontend_resource_name string = webapp.outputs.frontEndWebAppName
+output foundry_resource_name string = foundry.outputs.foundryResourceName
+output project_name string = foundry.outputs.projectName
+output azure_openai_model string = foundry.outputs.modelName
+output application_insight_resource_name string = monitoring.outputs.appInsightResourceName

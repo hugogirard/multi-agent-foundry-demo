@@ -3,6 +3,7 @@ from azure.identity import AzureCliCredential
 from pathlib import Path
 import json
 import os
+import time
 import requests
 
 
@@ -33,41 +34,42 @@ def main():
         "Content-Type": "application/json",
     }
 
-    # Check if agent already exists
-    get_url = f"{endpoint}/agents/{agent_name}?api-version={api_version}"
-    get_response = requests.get(get_url, headers=headers)
+    version_url = f"{endpoint}/agents/{agent_name}/versions?api-version={api_version}"
+    version_payload = {"definition": agent_def["definition"]}
 
-    if get_response.status_code == 200:
-        # Agent exists — create a new version
-        current = get_response.json()
-        current_version = current["versions"]["latest"]["version"]
-        print(f"Agent '{agent_name}' exists (version {current_version}). Creating new version...")
+    response = None
+    for attempt in range(3):
+        try:
+            response = requests.post(version_url, headers=headers, json=version_payload, timeout=120)
+        except requests.RequestException as exc:
+            print(f"Attempt {attempt + 1} failed with request error: {exc}")
+            response = None
 
-        version_url = f"{endpoint}/agents/{agent_name}/versions?api-version={api_version}"
-        response = requests.post(version_url, headers=headers, json={"definition": agent_def["definition"]})
-    else:
-        # Agent does not exist — create it
-        print(f"Agent '{agent_name}' not found. Creating...")
+        if response is not None and response.status_code in (200, 201):
+            break
 
-        create_url = f"{endpoint}/agents?api-version={api_version}"
-        response = requests.post(create_url, headers=headers, json=agent_def)
+        if response is None or response.status_code not in (404, 409, 429, 500, 502, 503, 504) or attempt == 2:
+            break
 
-        # Handle race condition: agent was created between our GET and POST
-        if response.status_code == 409:
-            print(f"Agent '{agent_name}' already exists (409 conflict). Retrying as version update...")
-            get_response = requests.get(get_url, headers=headers)
-            if get_response.status_code == 200:
-                current = get_response.json()
-                current_version = current["versions"]["latest"]["version"]
-                print(f"  Current version: {current_version}")
-                version_url = f"{endpoint}/agents/{agent_name}/versions?api-version={api_version}"
-                response = requests.post(version_url, headers=headers, json={"definition": agent_def["definition"]})
-            else:
-                print(f"  GET still failing ({get_response.status_code}). Skipping version update.")
+        print(f"Attempt {attempt + 1} failed with {response.status_code}. Retrying in 2 seconds...")
+        time.sleep(2)
+
+    if response is None:
+        print("Status: request failed")
+        print("(empty response body)")
+        raise SystemExit(1)
 
     print(f"Status: {response.status_code}")
-    if response.text:
-        print(json.dumps(response.json(), indent=2))
+
+    try:
+        response_body = response.json()
+    except ValueError:
+        response_body = None
+
+    if response_body is not None:
+        print(json.dumps(response_body, indent=2))
+    elif response.text:
+        print(response.text)
     else:
         print("(empty response body)")
 

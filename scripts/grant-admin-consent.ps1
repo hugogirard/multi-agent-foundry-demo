@@ -1,52 +1,19 @@
 #!/usr/bin/env pwsh
 # Grants tenant-wide admin consent for all app registrations.
-# Uses Invoke-RestMethod with bearer token for Graph API (avoids 'az ad' and 'az rest' hangs).
+# Uses Graph REST API via 'az rest' (avoids 'az ad' which hangs in some tenants).
 # Prerequisites:
 #   - azd environment must be provisioned (run `azd provision` first).
 #   - Caller must be a Global Administrator or Privileged Role Administrator.
 
 $ErrorActionPreference = 'Stop'
 
-# --- Get Graph API bearer token once ---
-$tokenJson = az account get-access-token --resource "https://graph.microsoft.com" -o json | ConvertFrom-Json
-$graphToken = $tokenJson.accessToken
-$graphHeaders = @{
-    Authorization  = "Bearer $graphToken"
-    "Content-Type" = "application/json"
-}
-
-function Invoke-Graph {
-    param([string]$Method, [string]$Url, [object]$Body)
-    $params = @{
-        Method  = $Method
-        Uri     = $Url
-        Headers = $graphHeaders
-    }
-    if ($Body) {
-        $params.Body = ($Body | ConvertTo-Json -Depth 5 -Compress)
-    }
-    return Invoke-RestMethod @params
-}
-
-function Invoke-GraphSafe {
-    param([string]$Method, [string]$Url, [object]$Body)
-    try {
-        return Invoke-Graph -Method $Method -Url $Url -Body $Body
-    }
-    catch {
-        $status = $_.Exception.Response.StatusCode.value__
-        return @{ _error = $true; _status = $status; _message = $_.Exception.Message }
-    }
-}
-
-# --- Helper: look up app client ID by exact display name ---
+# --- Helper: look up app client ID by exact display name via Graph API ---
 function Get-AppClientId {
     param([string]$DisplayName)
     $encodedName = [System.Uri]::EscapeDataString($DisplayName)
-    $url = "https://graph.microsoft.com/v1.0/applications?`$filter=displayName eq '$encodedName'&`$select=appId,displayName"
-    $result = Invoke-Graph -Method GET -Url $url
-    $app = $result.value | Where-Object { $_.displayName -eq $DisplayName } | Select-Object -First 1
-    return $app.appId
+    $url = "https://graph.microsoft.com/v1.0/applications?" + '$filter' + "=displayName eq '$encodedName'&" + '$select' + "=appId,displayName"
+    $result = az rest --method GET --url $url --query "value[?displayName=='$DisplayName'].appId | [0]" -o tsv
+    return $result
 }
 
 # --- Helper: grant tenant-wide admin consent for all delegated permissions on an app ---
@@ -56,33 +23,34 @@ function Grant-AdminConsentViaGraph {
     Write-Host "`nGranting admin consent for $Label ($AppId)..." -ForegroundColor Yellow
 
     # 1. Ensure service principal exists for this app
-    $spUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '$AppId'&`$select=id"
-    $spResult = Invoke-Graph -Method GET -Url $spUrl
-    $sp = $spResult.value | Select-Object -First 1
+    $spUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?" + '$filter' + "=appId eq '$AppId'&" + '$select' + "=id"
+    $sp = az rest --method GET --url $spUrl --query "value[0]" -o json | ConvertFrom-Json
 
     if (-not $sp) {
         Write-Host "  Creating service principal..."
-        $sp = Invoke-Graph -Method POST -Url "https://graph.microsoft.com/v1.0/servicePrincipals" -Body @{ appId = $AppId }
+        $body = @{ appId = $AppId } | ConvertTo-Json -Compress
+        $tmp = [System.IO.Path]::GetTempFileName()
+        [System.IO.File]::WriteAllText($tmp, $body)
+        $sp = az rest --method POST --url "https://graph.microsoft.com/v1.0/servicePrincipals" --body "@$tmp" --headers "Content-Type=application/json" -o json | ConvertFrom-Json
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     }
     $clientSpId = $sp.id
 
     # 2. Get the app's requiredResourceAccess
-    $appUrl = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$AppId'&`$select=requiredResourceAccess"
-    $appResult = Invoke-Graph -Method GET -Url $appUrl
-    $appData = $appResult.value | Select-Object -First 1
+    $appUrl = "https://graph.microsoft.com/v1.0/applications?" + '$filter' + "=appId eq '$AppId'&" + '$select' + "=requiredResourceAccess"
+    $app = az rest --method GET --url $appUrl --query "value[0]" -o json | ConvertFrom-Json
 
-    if (-not $appData.requiredResourceAccess) {
+    if (-not $app.requiredResourceAccess) {
         Write-Host "  No requiredResourceAccess found. Skipping."
         return
     }
 
-    foreach ($resource in $appData.requiredResourceAccess) {
+    foreach ($resource in $app.requiredResourceAccess) {
         $resourceAppId = $resource.resourceAppId
 
-        # 3. Get the resource's service principal
-        $rspUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '$resourceAppId'&`$select=id,displayName,oauth2PermissionScopes"
-        $rspResult = Invoke-Graph -Method GET -Url $rspUrl
-        $rsp = $rspResult.value | Select-Object -First 1
+        # 3. Get the resource's service principal (with its published scopes)
+        $rspUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?" + '$filter' + "=appId eq '$resourceAppId'&" + '$select' + "=id,displayName,oauth2PermissionScopes"
+        $rsp = az rest --method GET --url $rspUrl --query "value[0]" -o json | ConvertFrom-Json
 
         if (-not $rsp) {
             Write-Host "  WARNING: No service principal found for resource $resourceAppId. Skipping."
@@ -97,30 +65,36 @@ function Grant-AdminConsentViaGraph {
         $scopeValues = @()
         foreach ($permId in $delegatedIds) {
             $match = $rsp.oauth2PermissionScopes | Where-Object { $_.id -eq $permId }
-            if ($match) { $scopeValues += $match.value }
+            if ($match) {
+                $scopeValues += $match.value
+            }
         }
         if ($scopeValues.Count -eq 0) { continue }
         $scopeString = $scopeValues -join " "
 
         Write-Host "  Resource: $($rsp.displayName) -> scopes: $scopeString"
 
-        # 6. Create oauth2PermissionGrant (ignore 409 = already exists)
+        # 6. Create oauth2PermissionGrant (skip if already exists — POST returns 409)
         Write-Host "  Creating permission grant..."
         $grantBody = @{
             clientId    = $clientSpId
             consentType = "AllPrincipals"
             resourceId  = $rsp.id
             scope       = $scopeString
-        }
-        $result = Invoke-GraphSafe -Method POST -Url "https://graph.microsoft.com/v1.0/oauth2PermissionGrants" -Body $grantBody
+        } | ConvertTo-Json -Compress
+        $tmp = [System.IO.Path]::GetTempFileName()
+        [System.IO.File]::WriteAllText($tmp, $grantBody)
 
-        if ($result._error) {
-            if ($result._status -eq 409) {
-                Write-Host "  Grant already exists. Skipping."
-            }
-            else {
-                Write-Host "  Warning: Grant returned status $($result._status). Continuing."
-            }
+        $prevPref = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        $grantResult = az rest --method POST --url "https://graph.microsoft.com/v1.0/oauth2PermissionGrants" --body "@$tmp" --headers "Content-Type=application/json" -o json 2>&1
+        $grantExit = $LASTEXITCODE
+        $ErrorActionPreference = $prevPref
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+
+        if ($grantExit -ne 0) {
+            # Already exists or other non-fatal error — log and continue
+            Write-Host "  Grant may already exist (exit code $grantExit). Continuing."
         }
     }
 

@@ -1,15 +1,11 @@
 # deploy-apps.ps1
 # Builds and pushes both the MCP Flight Server and Flight Agent API Docker images to ACR,
 # configures their Web Apps, and sets all required app settings.
-# Uses Invoke-RestMethod for ALL Azure/Graph calls (az CLI hangs in some tenants).
+# Uses ARM REST for Azure resource operations and az rest for Graph app-registration lookups.
 
 $ErrorActionPreference = "Stop"
 
-# --- Acquire tokens (Graph + ARM) ---
-$graphTokenJson = az account get-access-token --resource "https://graph.microsoft.com" -o json | ConvertFrom-Json
-$graphToken = $graphTokenJson.accessToken
-$graphHeaders = @{ Authorization = "Bearer $graphToken"; "Content-Type" = "application/json" }
-
+# --- Acquire ARM token ---
 $armTokenJson = az account get-access-token --resource "https://management.azure.com" -o json | ConvertFrom-Json
 $armToken = $armTokenJson.accessToken
 $armHeaders = @{ Authorization = "Bearer $armToken"; "Content-Type" = "application/json" }
@@ -18,21 +14,53 @@ $subscriptionId = $armTokenJson.subscription
 
 # --- Graph API helpers ---
 
+function Find-AppRegistration {
+    param([string]$AppId, [string]$DisplayName)
+
+    if ($AppId) {
+        $url = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$AppId'&`$select=id,appId,displayName"
+        $app = az rest --method GET --url $url --query "value[0]" -o json 2>$null | ConvertFrom-Json
+        if ($app) { return $app }
+    }
+
+    if ($DisplayName) {
+        $url = "https://graph.microsoft.com/v1.0/applications?`$filter=displayName eq '$DisplayName'&`$select=id,appId,displayName"
+        $app = az rest --method GET --url $url --query "value[0]" -o json 2>$null | ConvertFrom-Json
+        if ($app) { return $app }
+    }
+
+    return $null
+}
+
 function Add-AppSecret {
     param([string]$AppId, [string]$SecretName)
-    $url = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$AppId'&`$select=id"
-    $app = (Invoke-RestMethod -Method GET -Uri $url -Headers $graphHeaders).value | Select-Object -First 1
-    if (-not $app) { throw "App not found: $AppId" }
-    $body = @{ passwordCredential = @{ displayName = $SecretName } } | ConvertTo-Json -Depth 3
-    $result = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/applications/$($app.id)/addPassword" -Headers $graphHeaders -Body $body
-    return $result.secretText
+
+    $app = Find-AppRegistration -AppId $AppId
+    if (-not $app -or -not $app.id) {
+        throw "App registration not found for client ID '$AppId'. Run 'azd provision' again or verify the Entra app exists."
+    }
+
+    $body = @{ passwordCredential = @{ displayName = $SecretName } } | ConvertTo-Json -Depth 3 -Compress
+    $tmp = [System.IO.Path]::GetTempFileName()
+    [System.IO.File]::WriteAllText($tmp, $body)
+
+    try {
+        $result = az rest --method POST --url "https://graph.microsoft.com/v1.0/applications/$($app.id)/addPassword" --body "@$tmp" --headers "Content-Type=application/json" -o json 2>$null | ConvertFrom-Json
+        return $result.secretText
+    }
+    finally {
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Get-AppClientIdByName {
     param([string]$DisplayName)
-    $encoded = [System.Uri]::EscapeDataString($DisplayName)
-    $url = "https://graph.microsoft.com/v1.0/applications?`$filter=displayName eq '$encoded'&`$select=appId,displayName"
-    $app = (Invoke-RestMethod -Method GET -Uri $url -Headers $graphHeaders).value | Where-Object { $_.displayName -eq $DisplayName } | Select-Object -First 1
+
+    $app = Find-AppRegistration -DisplayName $DisplayName
+    if (-not $app -or -not $app.appId) {
+        throw "App registration not found for display name '$DisplayName'."
+    }
+
     return $app.appId
 }
 
