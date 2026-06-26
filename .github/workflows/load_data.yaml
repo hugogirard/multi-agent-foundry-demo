@@ -38,6 +38,10 @@ jobs:
                     --type connection-strings \
                     --query "connectionStrings[0].connectionString" \
                     --output tsv)
+                  if [ -z "$CONNECTION_STRING" ]; then
+                    echo "ERROR: Failed to retrieve Cosmos DB connection string"
+                    exit 1
+                  fi                    
                   echo "::add-mask::$CONNECTION_STRING"
                   echo "connection_string=$CONNECTION_STRING" >> $GITHUB_OUTPUT
 
