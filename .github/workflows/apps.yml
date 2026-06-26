@@ -1,48 +1,82 @@
 name: Deploys Apps
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
+    inputs:
+      deploy-target:
+        description: "Select what to deploy"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - mcp-server
+          - flight-api
 
 jobs:
-    deploy-mcp-server:
-        runs-on: ubuntu-latest
+  deploy-mcp-server:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'mcp-server' }}
+    runs-on: ubuntu-latest
 
-        steps:
-            - uses: actions/checkout@v6
+    steps:
+      - uses: actions/checkout@v6
 
-            - name: Azure Login
-              uses: Azure/login@v3.0.0
-              with:
-                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-            - name: Build and Push image
-              run: |
-                  az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
-                  az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t mcp-flight-server:${{ github.sha }} -t mcp-flight-server:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
-              working-directory: src/mcp/flight-server
+      - name: Build and Push image
+        run: |
+          az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t mcp-flight-server:${{ github.sha }} -t mcp-flight-server:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+        working-directory: src/mcp/flight-server
 
-            - name: Generate App Secret
-              id: generate-secret
-              run: |
-                  APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
-                  SECRET=$(az rest --method POST \
-                  --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
-                  --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
-                  --query secretText -o tsv)
-                  echo "::add-mask::$SECRET"
-                  echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
+      - name: Generate App Secret
+        id: generate-secret
+        run: |
+          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
+          SECRET=$(az rest --method POST \
+          --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
+          --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
+          --query secretText -o tsv)
+          echo "::add-mask::$SECRET"
+          echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
 
-            - name: Set App Settings
-              uses: Azure/appservice-settings@v1
-              with:
-                  app-name: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
-                  app-settings-json: |
-                      [
-                        { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}" },
-                        { "name": "ENTRA_CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" }
-                      ]
+      - name: Set App Settings
+        uses: Azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+          app-settings-json: |
+            [
+              { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}" },
+              { "name": "ENTRA_CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" }
+            ]
 
-            - uses: azure/webapps-deploy@v2
-              with:
-                  app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
-                  images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-flight-server:${{ github.sha }}"
+      - uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
+          images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-flight-server:${{ github.sha }}"
+
+  deploys-flight-api:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'flight-api' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and Push image
+        run: |
+          az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t flight-api:${{ github.sha }} -t flight-api:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+        working-directory: src/api/flight-api
+
+      - uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{secrets.FLIGHT_AGENT_API_WEBAPP_NAME}}
+          images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/flight-api:${{ github.sha }}"
