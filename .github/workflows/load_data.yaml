@@ -47,8 +47,11 @@ jobs:
 
       - name: Debug
         run: |
-          echo ${{ secrets.COSMOS_DB_NAME }}
-          echo ${{ secrets.AZURE_RESOURCE_GROUP }}
+          echo "COSMOS_DB_NAME length: ${#COSMOS_NAME}"
+          echo "RESOURCE_GROUP length: ${#RG_NAME}"
+        env:
+          COSMOS_NAME: ${{ secrets.COSMOS_DB_NAME }}
+          RG_NAME: ${{ secrets.AZURE_RESOURCE_GROUP }}
 
       # - name: Run agents creation script
       #   id: create-agent
