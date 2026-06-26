@@ -45,21 +45,26 @@ jobs:
       #       echo "::add-mask::$CONNECTION_STRING"
       #       echo "connection_string=$CONNECTION_STRING" >> $GITHUB_OUTPUT
 
-      - name: Run agents creation script
-        id: create-agent
-        # env:
-        #     COSMOS_DB_CONNECTION_STRING: ${{ steps.cosmos.outputs.connection_string }}
+      - name: Debug
         run: |
-          CONNECTION_STRING=$(az cosmosdb keys list \
-            --name ${{ secrets.COSMOS_DB_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --type connection-strings \
-            --query "connectionStrings[0].connectionString" \
-            --output tsv)
-          if [ -z "$CONNECTION_STRING" ]; then
-            echo "ERROR: Failed to retrieve Cosmos DB connection string"
-            exit 1
-          fi             
-          export COSMOS_DB_CONNECTION_STRING="$CONNECTION_STRING"    
-          uv run data_loader.py
-        working-directory: utility
+          echo ${{ secrets.COSMOS_DB_NAME }}
+          echo ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+      # - name: Run agents creation script
+      #   id: create-agent
+      #   # env:
+      #   #     COSMOS_DB_CONNECTION_STRING: ${{ steps.cosmos.outputs.connection_string }}
+      #   run: |
+      #     CONNECTION_STRING=$(az cosmosdb keys list \
+      #       --name ${{ secrets.COSMOS_DB_NAME }} \
+      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+      #       --type connection-strings \
+      #       --query "connectionStrings[0].connectionString" \
+      #       --output tsv)
+      #     if [ -z "$CONNECTION_STRING" ]; then
+      #       echo "ERROR: Failed to retrieve Cosmos DB connection string"
+      #       exit 1
+      #     fi
+      #     export COSMOS_DB_CONNECTION_STRING="$CONNECTION_STRING"
+      #     uv run data_loader.py
+      #   working-directory: utility
