@@ -1,3 +1,22 @@
+# ---------------------------------------------------------------------------
+# Deploy Foundry MCP Connection
+# ---------------------------------------------------------------------------
+# This workflow handles the imperative post-deployment steps that Bicep
+# cannot express declaratively:
+#
+#   1. Generates a client secret on the Entra ID app registration
+#      (Graph API addPassword – not possible in Bicep).
+#
+#   2. Creates / updates the MCP connection at the Foundry *project* level
+#      via the ARM REST API, so the agent can discover MCP tools.
+#
+#   3. Extracts the OAuth consent redirect URL returned by the connection
+#      and patches it into the app registration's redirect URIs.
+#
+# Trigger: manual (workflow_dispatch). Typically run after the infra
+# workflow has provisioned all Azure resources and stored their names
+# as GitHub secrets.
+# ---------------------------------------------------------------------------
 name: Deploy Foundry MCP Connection
 
 on:

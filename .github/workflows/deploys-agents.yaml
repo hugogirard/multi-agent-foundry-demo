@@ -1,0 +1,41 @@
+name: Deploys Foundry Agents
+
+on:
+    workflow_dispatch:
+
+jobs:
+    deploy-agents:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.11"
+
+            - name: Install the latest version of uv
+              uses: astral-sh/setup-uv@v7
+
+            - name: Install dependencies
+              run: |
+                  uv sync
+              working-directory: agents
+
+            - name: Azure Login
+              uses: Azure/login@v2
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Run agents creation script
+              id: create-agent
+              env:
+                  # Add your environment variables here
+                  FOUNDRY_PROJECT_ENDPOINT: "https://${{secrets.FOUNDRY_RESOURCE_NAME}}.services.ai.azure.com/api/projects/${{secrets.PROJECT_NAME}}"
+                  MCP_SERVER_URL: "https://${{secrets.MCP_FLIGHT_WEBAPP_NAME}}.azurewebsites.net/mcp"
+                  AZURE_OPENAI_MODEL: ${{secrets.AZURE_OPENAI_MODEL}}
+              run: |
+                  uv run main.py
+              working-directory: agents

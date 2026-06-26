@@ -1,13 +1,37 @@
 #!/usr/bin/env bash
-# Post-provision hook: creates a client secret for the MCP Flight Server app registration
-# and deploys the Foundry MCP connection via Azure CLI REST API.
+# ---------------------------------------------------------------------------
+# deploy-foundry-connection.sh
+# ---------------------------------------------------------------------------
+# WHY THIS SCRIPT EXISTS:
+#   The Foundry MCP connection is created by Bicep (foundry-connection.bicep),
+#   but Bicep cannot handle three imperative steps that happen *after* the
+#   connection resource exists:
+#
+#   1. CREATE A CLIENT SECRET  – The Entra ID app registration used by the
+#      connection needs a client secret. Secrets can only be generated via
+#      the Microsoft Graph API (addPassword); Bicep has no way to do this.
+#
+#   2. DEPLOY THE CONNECTION AT PROJECT LEVEL – The Bicep module creates the
+#      connection at the Foundry *account* level. This script creates (or
+#      updates) it at the *project* level using the ARM REST API, which is
+#      required for the agent to discover the MCP tools.
+#
+#   3. PATCH THE REDIRECT URI – After the connection is created, Azure returns
+#      a consent redirect URL (global.consent.azure-apim.net/redirect/...).
+#      This URL must be added to the app registration's redirect URIs for the
+#      OAuth flow to work. It's a chicken-and-egg problem: you can't know the
+#      URL until the connection exists, so it must be patched after creation.
+#
+# USAGE:
+#   Can be run locally (with `az login` and env vars exported) or in CI
+#   (GitHub Actions injects env vars from secrets).
 #
 # Required environment variables:
-#   FOUNDRY_CONNECTION_MCP_CLIENT_ID
-#   AZURE_RESOURCE_GROUP
-#   MCP_FLIGHT_WEBAPP_NAME
-#   FOUNDRY_RESOURCE_NAME
-#   PROJECT_NAME
+#   FOUNDRY_CONNECTION_MCP_CLIENT_ID  – App ID of the Entra app for the connection
+#   AZURE_RESOURCE_GROUP              – Resource group containing the Foundry resource
+#   MCP_FLIGHT_WEBAPP_NAME            – Name of the MCP Flight Server App Service
+#   FOUNDRY_RESOURCE_NAME             – Name of the Foundry (Cognitive Services) account
+#   PROJECT_NAME                      – Name of the Foundry project
 #
 # Optional (auto-detected if not set):
 #   TENANT_ID

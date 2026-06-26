@@ -77,3 +77,36 @@ jobs:
                   gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
                   gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
                   gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
+
+    # -----------------------------------------------------------------
+    # Post-provision: wire up the Foundry MCP connection
+    # -----------------------------------------------------------------
+    # Bicep creates the connection resource, but three things can only
+    # happen imperatively after deployment:
+    #   1. Generate a client secret on the Entra app (Graph API)
+    #   2. Create/update the connection at the Foundry *project* level
+    #   3. Patch the OAuth consent redirect URI back into the app
+    # See scripts/deploy-foundry-connection.sh for full details.
+    # -----------------------------------------------------------------
+    update-mcp-foundry-connection:
+        needs: create-azure-resources
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Update Foundry MCP Connection
+              env:
+                  FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
+                  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+                  MCP_FLIGHT_WEBAPP_NAME: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+                  FOUNDRY_RESOURCE_NAME: ${{ secrets.FOUNDRY_RESOURCE_NAME }}
+                  PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+              run: |
+                  chmod +x ./scripts/deploy-foundry-connection.sh
+                  ./scripts/deploy-foundry-connection.sh
