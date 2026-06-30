@@ -68,6 +68,12 @@ def main():
 
     if response_body is not None:
         print(json.dumps(response_body, indent=2))
+
+        # Write agent version to GITHUB_OUTPUT for CI consumption
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output and "id" in response_body:
+            with open(github_output, "a") as fh:
+                fh.write(f"agent_version={response_body['id']}\n")
     elif response.text:
         print(response.text)
     else:
