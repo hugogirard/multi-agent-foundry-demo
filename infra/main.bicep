@@ -120,6 +120,7 @@ module webapp 'core/webapp/workload.bicep' = {
     clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
     tags: tags
     cosmosDbResourceName: db.outputs.resourceName
+    foundryProjectEndpoint: 'https://${abbrs.cognitiveServicesAccounts}${resourceToken}.services.ai.azure.com/api/projects/${abbrs.cognitiveServicesAccounts}${resourceToken}-travel-planner'
   }
 }
 
@@ -334,3 +335,5 @@ output foundry_resource_name string = foundry.outputs.foundryResourceName
 output project_name string = foundry.outputs.projectName
 output azure_openai_model string = foundry.outputs.modelName
 output application_insight_resource_name string = monitoring.outputs.appInsightResourceName
+output flight_agent_api_client_id string = FlightAgentApi.outputs.applicationId
+output openapi_client_id string = OpenAPI.outputs.applicationId

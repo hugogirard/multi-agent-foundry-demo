@@ -5,6 +5,7 @@ param appServicePlanResourceName string
 param location string
 param containerRegistryName string
 param cosmosDbResourceName string
+param foundryProjectEndpoint string
 param tags object
 
 resource asp 'Microsoft.Web/serverfarms@2024-11-01' = {
@@ -61,7 +62,7 @@ resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
         }
         {
           name: 'FOUNDRY_PROJECT_ENDPOINT'
-          value: ''
+          value: foundryProjectEndpoint
         }
         {
           name: 'OPENAPI'

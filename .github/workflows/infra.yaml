@@ -58,6 +58,8 @@ jobs:
                   echo "PROJECT_NAME=$(jq -r '.project_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_OPENAI_MODEL=$(jq -r '.azure_openai_model.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "APPLICATION_INSIGHT_RESOURCE_NAME=$(jq -r '.application_insight_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FLIGHT_AGENT_API_CLIENT_ID=$(jq -r '.flight_agent_api_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "OPENAPI_CLIENT_ID=$(jq -r '.openapi_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
 
             - name: Set secrets using gh CLI
               env:
@@ -77,6 +79,8 @@ jobs:
                   gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
                   gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
                   gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
+                  gh secret set FLIGHT_AGENT_API_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_CLIENT_ID }}"
+                  gh secret set OPENAPI_CLIENT_ID --body "${{ steps.createResources.outputs.OPENAPI_CLIENT_ID }}"
 
     # -----------------------------------------------------------------
     # Post-provision: wire up the Foundry MCP connection
