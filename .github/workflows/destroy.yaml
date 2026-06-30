@@ -1,0 +1,45 @@
+name: Destroy all resources
+
+on:
+    workflow_dispatch:
+
+jobs:
+    destroy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            # Phase 1: Delete and purge all Entra ID app registrations
+            - name: Delete and purge app registrations
+              run: ./scripts/delete-app-registrations.sh
+
+            # Phase 2: Delete the resource group (all Azure resources)
+            - name: Delete resource group
+              run: |
+                  echo "Deleting resource group: ${{ secrets.AZURE_RESOURCE_GROUP }}"
+                  az group delete \
+                    --name ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                    --yes \
+                    --no-wait
+
+            - name: Wait for resource group deletion
+              run: |
+                  echo "Waiting for resource group deletion to complete..."
+                  az group wait \
+                    --name ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                    --deleted
+
+            # Phase 3: Purge the soft-deleted Foundry (Cognitive Services) account
+            - name: Purge deleted Foundry account
+              run: |
+                  echo "Purging soft-deleted Foundry account: ${{ secrets.FOUNDRY_RESOURCE_NAME }}"
+                  az cognitiveservices account purge \
+                    --name ${{ secrets.FOUNDRY_RESOURCE_NAME }} \
+                    --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                    --location swedencentral
