@@ -241,6 +241,7 @@ module OpenAPI 'core/entra/app.registration.bicep' = {
     ])
     spaRedirectUris: [
       'http://localhost:8000/oauth2-redirect' // Redirect for the FlightAgentAPI      
+      'https://${webapp.outputs.flightAgentApiResourceName}.azurewebsites.net/oauth2-redirect'
     ]
   }
 }

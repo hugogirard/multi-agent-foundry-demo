@@ -2,9 +2,22 @@ name: Create Azure resources
 
 on:
     workflow_dispatch:
+        inputs:
+            job_to_run:
+                description: "Which job to run"
+                required: true
+                default: "all"
+                type: choice
+                options:
+                    - all
+                    - delete-app-registration
+                    - create-azure-resources
+                    - update-mcp-foundry-connection
+                    - grant-admin-consent
 
 jobs:
     delete-app-registration:
+        if: inputs.job_to_run == 'all' || inputs.job_to_run == 'delete-app-registration'
         runs-on: ubuntu-latest
 
         steps:
@@ -19,6 +32,7 @@ jobs:
 
     create-azure-resources:
         needs: delete-app-registration
+        if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'create-azure-resources')
 
         env:
             REGION: "swedencentral"
@@ -94,6 +108,7 @@ jobs:
     # -----------------------------------------------------------------
     update-mcp-foundry-connection:
         needs: create-azure-resources
+        if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'update-mcp-foundry-connection')
         runs-on: ubuntu-latest
 
         steps:
@@ -103,6 +118,9 @@ jobs:
               uses: Azure/login@v3.0.0
               with:
                   creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Wait for App Registration propagation
+              run: sleep 120
 
             - name: Update Foundry MCP Connection
               env:
@@ -114,3 +132,30 @@ jobs:
               run: |
                   chmod +x ./scripts/deploy-foundry-connection.sh
                   ./scripts/deploy-foundry-connection.sh
+
+    # -----------------------------------------------------------------
+    # Post-provision: grant admin consent for all app registrations
+    # -----------------------------------------------------------------
+    grant-admin-consent:
+        needs: create-azure-resources
+        if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'grant-admin-consent')
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Wait for Entra ID propagation
+              run: sleep 60
+
+            - name: Grant Admin Consent
+              env:
+                  FLIGHT_MCP_SERVER_CLIENT_ID: ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}
+                  FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
+              run: |
+                  chmod +x ./scripts/grant-admin-consent.sh
+                  ./scripts/grant-admin-consent.sh
