@@ -24,7 +24,12 @@ param applicationInsightResourceName string
 //   name: foundryResourceName
 // }
 
+resource foundry 'Microsoft.CognitiveServices/accounts@2026-01-15-preview' existing = {
+  name: foundryResourceName
+}
+
 resource project 'Microsoft.CognitiveServices/accounts/projects@2026-03-15-preview' existing = {
+  parent: foundry
   name: projectResourceName
 }
 
