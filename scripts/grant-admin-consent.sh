@@ -12,8 +12,6 @@ set -euo pipefail
 # --- Helper: look up app client ID by exact display name via Graph API ---
 get_app_client_id() {
     local display_name="$1"
-    local encoded_name
-    encoded_name=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$display_name'))")
     local url="https://graph.microsoft.com/v1.0/applications?\$filter=displayName eq '${display_name}'&\$select=appId,displayName"
     az rest --method GET --url "$url" --query "value[?displayName=='${display_name}'].appId | [0]" -o tsv
 }
@@ -24,21 +22,24 @@ grant_admin_consent() {
     local label="$2"
 
     echo ""
-    echo "Granting admin consent for $label ($app_id)..."
+    echo "=== Granting admin consent for $label ($app_id) ==="
 
     # 1. Ensure service principal exists for this app
     local sp_url="https://graph.microsoft.com/v1.0/servicePrincipals?\$filter=appId eq '${app_id}'&\$select=id"
     local client_sp_id
-    client_sp_id=$(az rest --method GET --url "$sp_url" --query "value[0].id" -o tsv 2>/dev/null || true)
+    client_sp_id=$(az rest --method GET --url "$sp_url" --query "value[0].id" -o tsv || true)
 
     if [[ -z "$client_sp_id" || "$client_sp_id" == "None" ]]; then
         echo "  Creating service principal..."
-        local body="{\"appId\":\"${app_id}\"}"
+        local tmp_sp
+        tmp_sp=$(mktemp)
+        printf '{"appId":"%s"}' "$app_id" > "$tmp_sp"
         client_sp_id=$(az rest --method POST \
             --url "https://graph.microsoft.com/v1.0/servicePrincipals" \
-            --body "$body" \
+            --body @"$tmp_sp" \
             --headers "Content-Type=application/json" \
             --query "id" -o tsv)
+        rm -f "$tmp_sp"
     fi
 
     echo "  Service Principal ID: $client_sp_id"
@@ -46,7 +47,7 @@ grant_admin_consent() {
     # 2. Get the app's requiredResourceAccess
     local app_url="https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '${app_id}'&\$select=requiredResourceAccess"
     local app_json
-    app_json=$(az rest --method GET --url "$app_url" --query "value[0].requiredResourceAccess" -o json 2>/dev/null || echo "null")
+    app_json=$(az rest --method GET --url "$app_url" --query "value[0].requiredResourceAccess" -o json || echo "null")
 
     if [[ "$app_json" == "null" || "$app_json" == "[]" ]]; then
         echo "  No requiredResourceAccess found. Skipping."
@@ -64,7 +65,7 @@ grant_admin_consent() {
         # 3. Get the resource's service principal (with its published scopes)
         local rsp_url="https://graph.microsoft.com/v1.0/servicePrincipals?\$filter=appId eq '${resource_app_id}'&\$select=id,displayName,oauth2PermissionScopes"
         local rsp_json
-        rsp_json=$(az rest --method GET --url "$rsp_url" --query "value[0]" -o json 2>/dev/null || echo "null")
+        rsp_json=$(az rest --method GET --url "$rsp_url" --query "value[0]" -o json || echo "null")
 
         if [[ "$rsp_json" == "null" ]]; then
             echo "  WARNING: No service principal found for resource $resource_app_id. Skipping."
@@ -104,27 +105,36 @@ grant_admin_consent() {
 
         echo "  Resource: $resource_display_name -> scopes: $scope_values"
 
-        # 6. Create oauth2PermissionGrant (skip if already exists — POST returns conflict)
+        # 6. Create oauth2PermissionGrant (skip if already exists — POST returns 409 conflict)
         echo "  Creating permission grant..."
-        local grant_body
-        grant_body=$(jq -n \
+        local tmp_grant
+        tmp_grant=$(mktemp)
+        jq -n \
             --arg clientId "$client_sp_id" \
             --arg resourceId "$resource_sp_id" \
             --arg scope "$scope_values" \
-            '{clientId: $clientId, consentType: "AllPrincipals", resourceId: $resourceId, scope: $scope}')
+            '{clientId: $clientId, consentType: "AllPrincipals", resourceId: $resourceId, scope: $scope}' > "$tmp_grant"
 
-        if az rest --method POST \
+        echo "  Request body: $(cat "$tmp_grant")"
+
+        local http_response
+        if http_response=$(az rest --method POST \
             --url "https://graph.microsoft.com/v1.0/oauth2PermissionGrants" \
-            --body "$grant_body" \
+            --body @"$tmp_grant" \
             --headers "Content-Type=application/json" \
-            -o none 2>/dev/null; then
+            -o json 2>&1); then
             echo "  Grant created successfully."
+            echo "  Response: $http_response"
         else
-            echo "  Grant may already exist or non-fatal error. Continuing."
+            local exit_code=$?
+            echo "  WARNING: Grant request returned exit code $exit_code."
+            echo "  Response: $http_response"
+            echo "  (This may be OK if the grant already exists — 409 conflict.)"
         fi
+        rm -f "$tmp_grant"
     done
 
-    echo "  Admin consent granted for $label."
+    echo "  Admin consent complete for $label."
 }
 
 # --- Main ---
