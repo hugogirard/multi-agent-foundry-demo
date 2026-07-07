@@ -10,6 +10,7 @@ load_dotenv(override=True)
 COSMOS_DB_CONNECTION_STRING = os.getenv('CosmosDbConnectionString')
 DATABASE_NAME = 'ContosoAgency'
 FLIGHT_CONTAINER = 'flight'
+HOTEL_CONTAINER = 'hotel'
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -65,3 +66,16 @@ for flight in flights:
    flight['id'] = str(uuid.uuid4())
    container.create_item(body=flight)
 
+# Load hotels
+container = db.get_container_client(HOTEL_CONTAINER)
+
+for item in container.read_all_items():
+    container.delete_item(item=item['id'], partition_key=item['city'])
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(script_dir, '..', 'data', 'hotels.json'), 'r') as f:
+    hotels = json.load(f)["hotels"]    
+
+for hotel in hotels:
+   hotel['id'] = str(uuid.uuid4())
+   container.create_item(body=hotel)    
