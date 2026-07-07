@@ -93,8 +93,11 @@ function Grant-AdminConsentViaGraph {
         Remove-Item $tmp -Force -ErrorAction SilentlyContinue
 
         if ($grantExit -ne 0) {
-            # Already exists or other non-fatal error — log and continue
-            Write-Host "  Grant may already exist (exit code $grantExit). Continuing."
+            Write-Host "  WARNING: Grant failed (exit code $grantExit)." -ForegroundColor Red
+            Write-Host "  Response: $grantResult" -ForegroundColor Red
+        }
+        else {
+            Write-Host "  Grant created successfully." -ForegroundColor Green
         }
     }
 
@@ -154,3 +157,7 @@ Grant-AdminConsentViaGraph -AppId $openApiClientId      -Label "OpenAPI"
 Grant-AdminConsentViaGraph -AppId $frontEndClientId     -Label "Front-End Chatbot Trip Reservation"
 
 Write-Host "`nDone! Admin consent has been granted for all applications." -ForegroundColor Cyan
+
+# Ensure script exits with 0 — the az rest calls above may leave $LASTEXITCODE = 1
+# from 409 conflict responses (grant already exists), which is expected/non-fatal.
+exit 0
