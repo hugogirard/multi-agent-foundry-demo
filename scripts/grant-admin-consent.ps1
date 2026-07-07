@@ -104,11 +104,11 @@ function Grant-AdminConsentViaGraph {
 # --- Main ---
 
 Write-Host "Granting admin consent for all app registrations..." -ForegroundColor Cyan
-Write-Host "`nReading azd environment values..."
+Write-Host "`nReading client IDs..."
 
-$mcpClientId = azd env get-value FLIGHT_MCP_SERVER_CLIENT_ID
+$mcpClientId = if ($env:FLIGHT_MCP_SERVER_CLIENT_ID) { $env:FLIGHT_MCP_SERVER_CLIENT_ID } else { azd env get-value FLIGHT_MCP_SERVER_CLIENT_ID }
 if (-not $mcpClientId) {
-    Write-Error "Could not read FLIGHT_MCP_SERVER_CLIENT_ID from azd env."
+    Write-Error "Could not read FLIGHT_MCP_SERVER_CLIENT_ID from env or azd env."
     exit 1
 }
 Write-Host "  Flight MCP Server Client ID: $mcpClientId"
@@ -138,9 +138,9 @@ if (-not $frontEndClientId) {
 Write-Host "  Front-End Client ID: $frontEndClientId"
 
 Write-Host "Looking up Foundry MCP Flight Server app registration..."
-$foundryMcpClientId = azd env get-value FOUNDRY_CONNECTION_MCP_CLIENT_ID
+$foundryMcpClientId = if ($env:FOUNDRY_CONNECTION_MCP_CLIENT_ID) { $env:FOUNDRY_CONNECTION_MCP_CLIENT_ID } else { azd env get-value FOUNDRY_CONNECTION_MCP_CLIENT_ID }
 if (-not $foundryMcpClientId) {
-    Write-Error "Could not read FOUNDRY_CONNECTION_MCP_CLIENT_ID from azd env."
+    Write-Error "Could not read FOUNDRY_CONNECTION_MCP_CLIENT_ID from env or azd env."
     exit 1
 }
 Write-Host "  Foundry MCP Flight Server Client ID: $foundryMcpClientId"

@@ -153,9 +153,8 @@ jobs:
               run: sleep 60
 
             - name: Grant Admin Consent
+              shell: pwsh
               env:
                   FLIGHT_MCP_SERVER_CLIENT_ID: ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}
                   FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
-              run: |
-                  chmod +x ./scripts/grant-admin-consent.sh
-                  ./scripts/grant-admin-consent.sh
+              run: ./scripts/grant-admin-consent.ps1
