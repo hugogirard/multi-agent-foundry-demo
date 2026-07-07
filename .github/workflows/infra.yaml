@@ -17,7 +17,7 @@ on:
 
 jobs:
     delete-app-registration:
-        if: inputs.job_to_run == 'all' || inputs.job_to_run == 'delete-app-registration'
+        if: inputs.job_to_run == 'all' || inputs.job_to_run == 'delete-app-registration' || inputs.job_to_run == 'create-azure-resources'
         runs-on: ubuntu-latest
 
         steps:
