@@ -308,14 +308,14 @@ module foundry 'core/ai/foundry.bicep' = {
   }
 }
 
-module foundryConnection 'core/ai/foundry-connection.bicep' = {
-  scope: rg
-  params: {
-    applicationInsightResourceName: monitoring.outputs.appInsightResourceName
-    foundryResourceName: foundry.outputs.foundryResourceName
-    projectResourceName: foundry.outputs.projectName
-  }
-}
+// module foundryConnection 'core/ai/foundry-connection.bicep' = {
+//   scope: rg
+//   params: {
+//     applicationInsightResourceName: monitoring.outputs.appInsightResourceName
+//     foundryResourceName: foundry.outputs.foundryResourceName
+//     projectResourceName: foundry.outputs.projectName
+//   }
+// }
 
 module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
   scope: rg
