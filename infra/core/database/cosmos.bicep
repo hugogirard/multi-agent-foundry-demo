@@ -50,6 +50,20 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2025-11-01-preview' = {
         }
       }
     }
+    resource hotelContainer 'containers@2025-11-01-preview' = {
+      name: 'hotel'
+      properties: {
+        resource: {
+          id: 'hotel'
+          partitionKey: {
+            kind: 'Hash'
+            paths: [
+              '/city'
+            ]
+          }
+        }
+      }
+    }
   }
 }
 
