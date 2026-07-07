@@ -12,6 +12,7 @@ on:
           - all
           - mcp-server
           - flight-api
+          - frontend
 
 jobs:
   deploy-mcp-server:
@@ -103,3 +104,42 @@ jobs:
         with:
           app-name: ${{secrets.FLIGHT_AGENT_API_WEBAPP_NAME}}
           images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/flight-api:${{ github.sha }}"
+
+  deploy-frontend:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'frontend' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Replace environment tokens
+        run: |
+          TENANT_ID=$(az account show --query tenantId -o tsv)
+          APP_INSIGHT_CNX=$(az monitor app-insights component show \
+            --app ${{ secrets.APPLICATION_INSIGHT_RESOURCE_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --query connectionString -o tsv)
+
+          sed -i "s|__clientId__|${{ secrets.FLIGHT_AGENT_API_CLIENT_ID }}|g" src/app/environments/environment.prod.ts
+          sed -i "s|__authority__|https://login.microsoftonline.com/$TENANT_ID|g" src/app/environments/environment.prod.ts
+          sed -i "s|__apiScopes__|api://${{ secrets.FLIGHT_AGENT_API_WEBAPP_NAME }}/user_impersonation|g" src/app/environments/environment.prod.ts
+          sed -i "s|__apiBaseUrl__|https://${{ secrets.FLIGHT_AGENT_API_WEBAPP_NAME }}.azurewebsites.net|g" src/app/environments/environment.prod.ts
+          sed -i "s|__redirectUrl__|https://${{ secrets.FRONTEND_RESOURCE_NAME }}.azurewebsites.net|g" src/app/environments/environment.prod.ts
+          sed -i "s|__appInsightKey__|$APP_INSIGHT_CNX|g" src/app/environments/environment.prod.ts
+        working-directory: src/frontend
+
+      - name: Build and Push image
+        run: |
+          az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t frontend:${{ github.sha }} -t frontend:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+        working-directory: src/frontend
+
+      - uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.FRONTEND_RESOURCE_NAME }}
+          images: "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/frontend:${{ github.sha }}"
