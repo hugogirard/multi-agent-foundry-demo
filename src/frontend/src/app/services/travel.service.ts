@@ -20,7 +20,7 @@ export class TravelService {
             sessionInfo: sessionInfo
         }
 
-        return this.http.post(`${environment.apiBaseUrl}/api/conversation`, conversation, {
+        return this.http.post(`${environment.apiBaseUrl}/api/conversation/`, conversation, {
             observe: 'events',
             reportProgress: true,
             responseType: 'text'
