@@ -30,6 +30,9 @@ jobs:
 
             - run: ./scripts/delete-app-registrations.sh
 
+            - name: Wait for App Registration propagation
+              run: sleep 120
+
     create-azure-resources:
         needs: delete-app-registration
         if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'create-azure-resources')
