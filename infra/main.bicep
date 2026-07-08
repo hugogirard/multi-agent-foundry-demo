@@ -116,6 +116,7 @@ module webapp 'core/webapp/workload.bicep' = {
     appServicePlanResourceName: '${abbrs.webServerFarms}${resourceToken}'
     containerRegistryName: containerRegistry.outputs.resourceName
     mcpFlightServerName: '${abbrs.webSitesAppService}mcp-fligh-server-${resourceToken}'
+    mcpHotelServerName: '${abbrs.webSitesAppService}mcp-hotel-server-${resourceToken}'
     flightAgentApiResourceName: '${abbrs.webSitesAppService}flight-agent-api-${resourceToken}'
     clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
     tags: tags
@@ -177,6 +178,31 @@ module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
         isEnabled: true
         type: 'User'
         value: 'flight_reservation_information'
+      }
+    ]
+  }
+}
+
+module HotelMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Hotel MCP Server'
+    appUniqueName: webapp.outputs.mcpHotelWebAppName
+    requiredResourcceAccess: requiredResourceAccess
+    webRedirectUris: [
+      'https://${webapp.outputs.mcpHotelWebAppName}.azurewebsites.net/auth/callback'
+      'http://localhost:9001/auth/callback'
+    ]
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.mcpHotelWebAppName, 'hotel_reservation_information')
+        adminConsentDescription: 'Allow the application to access the hotel information'
+        adminConsentDisplayName: 'Allow MCP Hotel Server'
+        userConsentDescription: 'Allow the application to access the hotel information.'
+        userConsentDisplayName: 'Allow MCP Hotel Server'
+        isEnabled: true
+        type: 'User'
+        value: 'hotel_reservation_information'
       }
     ]
   }
@@ -337,6 +363,7 @@ output cosmos_db_name string = db.outputs.resourceName
 output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
 output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
 output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
+output hotel_flight_webapp_name string = webapp.outputs.mcpHotelWebAppName
 output azure_container_registry_name string = containerRegistry.outputs.resourceName
 output bring_your_own_resource bool = bringYourOwnResource
 output flight_agent_api_webapp_name string = webapp.outputs.flightAgentApiResourceName

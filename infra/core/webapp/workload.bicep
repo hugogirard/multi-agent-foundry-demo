@@ -1,5 +1,6 @@
 param flightAgentApiResourceName string
 param mcpFlightServerName string
+param mcpHotelServerName string
 param clientWebAppName string
 param appServicePlanResourceName string
 param location string
@@ -83,6 +84,68 @@ resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
+      alwaysOn: true
+    }
+    serverFarmId: asp.id
+    httpsOnly: true
+    publicNetworkAccess: 'Enabled'
+    clientAffinityEnabled: false
+  }
+}
+
+resource mcpHotel 'Microsoft.Web/sites@2025-03-01' = {
+  name: mcpHotelServerName
+  location: location
+  tags: union(tags, { 'azd-service-name': 'mcpHotel' })
+  properties: {
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acr.properties.loginServer}'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.listCredentials().username
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+        {
+          name: 'COSMOS_DB_CONNECTION_STRING'
+          value: cosmos.listConnectionStrings().connectionStrings[0].connectionString
+        }
+        {
+          name: 'COSMOS_DATABASE'
+          value: 'ContosoAgency'
+        }
+        {
+          name: 'FLIGHT_CONTAINER'
+          value: 'hotel'
+        }
+        {
+          name: 'REDIRECT_URL'
+          value: 'https://${mcpHotelServerName}.azurewebsites.net'
+        }
+        {
+          name: 'TENANT_ID'
+          value: tenant().tenantId
+        }
+        {
+          name: 'IDENTIFIER_URI'
+          value: 'api://${mcpHotelServerName}'
+        }
+        {
+          name: 'SCOPE'
+          value: 'hotel_reservation_information'
         }
       ]
       linuxFxVersion: 'DOCKER|mcr.microsoft.com/appsvc/staticsite:latest'
@@ -192,5 +255,6 @@ resource frontEnd 'Microsoft.Web/sites@2025-03-01' = {
 }
 
 output mcpFlightWebAppName string = mcpFlight.name
+output mcpHotelWebAppName string = mcpHotel.name
 output frontEndWebAppName string = frontEnd.name
 output flightAgentApiResourceName string = flightApi.name
