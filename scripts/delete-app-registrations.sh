@@ -105,22 +105,42 @@ for displayName in "${appDisplayNames[@]}"; do
     done
 done
 
-# --- Phase 3: Verify no soft-deleted apps remain ---
+# --- Phase 3: Verify no soft-deleted apps remain (with retry for replication delay) ---
 
-echo -e "\n${CYAN}Verifying all soft-deleted apps are purged...${NC}"
+echo -e "\n${CYAN}Waiting 30s for Entra ID replication before verification...${NC}"
+sleep 30
 
-for displayName in "${appDisplayNames[@]}"; do
-    url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
-    remaining=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+max_retries=3
+retry_delay=30
 
-    if [ -n "$remaining" ] && [ "$remaining" != "[]" ] && [ "$remaining" != "null" ]; then
-        echo -e "  ${RED}ERROR: '$displayName' still exists in deleted items after purge attempt.${NC}"
-        purge_failed=true
+for attempt in $(seq 1 $max_retries); do
+    echo -e "\n${CYAN}Verification attempt $attempt/$max_retries...${NC}"
+    verification_failed=false
+
+    for displayName in "${appDisplayNames[@]}"; do
+        url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
+        remaining=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+
+        if [ -n "$remaining" ] && [ "$remaining" != "[]" ] && [ "$remaining" != "null" ]; then
+            echo -e "  ${YELLOW}'$displayName' still exists in deleted items (replication may be pending).${NC}"
+            verification_failed=true
+        fi
+    done
+
+    if [ "$verification_failed" = false ]; then
+        echo -e "  ${GREEN}All soft-deleted apps confirmed purged.${NC}"
+        break
+    fi
+
+    if [ $attempt -lt $max_retries ]; then
+        echo -e "  ${YELLOW}Waiting ${retry_delay}s before retry...${NC}"
+        sleep $retry_delay
     fi
 done
 
-if [ "$purge_failed" = true ]; then
-    echo -e "\n${RED}FATAL: Purge incomplete — soft-deleted apps still exist. Deployment will fail due to uniqueName conflicts.${NC}"
+if [ "$purge_failed" = true ] || [ "$verification_failed" = true ]; then
+    echo -e "\n${RED}FATAL: Purge incomplete — soft-deleted apps still exist after $max_retries verification attempts.${NC}"
+    echo -e "${RED}This will cause uniqueName conflicts during Bicep deployment.${NC}"
     echo -e "${RED}Fix: Manually purge from Entra ID > App registrations > Deleted applications, or grant Directory.ReadWrite.All to the service principal.${NC}"
     exit 1
 fi

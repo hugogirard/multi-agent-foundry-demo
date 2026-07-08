@@ -125,180 +125,175 @@ module webapp 'core/webapp/workload.bicep' = {
   }
 }
 
-// --- App Registrations (commented out due to Microsoft Graph Bicep extension bug) ---
-// See: https://github.com/microsoftgraph/msgraph-bicep-types/issues/299
-// The extension v1.0:1.0.0 cannot resolve application.appId on fresh deployments.
-// App registrations are now created via post-deployment script: scripts/create-app-registrations.sh
+var requiredResourceAccess = [
+  {
+    // MS Graph well-known application ID
+    resourceAppId: '00000003-0000-0000-c000-000000000000'
+    resourceAccess: [
+      {
+        // Well-known permission ID for User.Read delegated scope
+        id: 'e1fe6dd8-ba31-4d61-89e7-88639da4683d'
+        type: 'Scope' // Delegated permission
+      }
+    ]
+  }
+]
 
-// var requiredResourceAccess = [
-//   {
-//     // MS Graph well-known application ID
-//     resourceAppId: '00000003-0000-0000-c000-000000000000'
-//     resourceAccess: [
-//       {
-//         // Well-known permission ID for User.Read delegated scope
-//         id: 'e1fe6dd8-ba31-4d61-89e7-88639da4683d'
-//         type: 'Scope' // Delegated permission
-//       }
-//     ]
-//   }
-// ]
+module FoundryConnectionMCP 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Foundry MCP Flight Server'
+    appUniqueName: 'foundry-mcp-flight-server-${resourceToken}'
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+  }
+}
 
-// module FoundryConnectionMCP 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'Foundry MCP Flight Server'
-//     appUniqueName: 'foundry-mcp-flight-server-${resourceToken}'
-//     requiredResourcceAccess: union(requiredResourceAccess, [
-//       {
-//         resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
-//         resourceAccess: [
-//           {
-//             id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
-//             type: 'Scope'
-//           }
-//         ]
-//       }
-//     ])
-//   }
-// }
+module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Flight MCP Server'
+    appUniqueName: webapp.outputs.mcpFlightWebAppName
+    requiredResourcceAccess: requiredResourceAccess
+    webRedirectUris: [
+      'https://${webapp.outputs.mcpFlightWebAppName}.azurewebsites.net/auth/callback'
+      'http://localhost:9000/auth/callback'
+    ]
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+        adminConsentDescription: 'Allow the application to access the flight and reservation'
+        adminConsentDisplayName: 'Allow MCP Flight Server'
+        userConsentDescription: 'Allow the application to access the flight and reservation.'
+        userConsentDisplayName: 'Allow MCP Flight Server'
+        isEnabled: true
+        type: 'User'
+        value: 'flight_reservation_information'
+      }
+    ]
+  }
+}
 
-// module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'Flight MCP Server'
-//     appUniqueName: webapp.outputs.mcpFlightWebAppName
-//     requiredResourcceAccess: requiredResourceAccess
-//     webRedirectUris: [
-//       'https://${webapp.outputs.mcpFlightWebAppName}.azurewebsites.net/auth/callback'
-//       'http://localhost:9000/auth/callback'
-//     ]
-//     oauth2PermissionScopes: [
-//       {
-//         id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
-//         adminConsentDescription: 'Allow the application to access the flight and reservation'
-//         adminConsentDisplayName: 'Allow MCP Flight Server'
-//         userConsentDescription: 'Allow the application to access the flight and reservation.'
-//         userConsentDisplayName: 'Allow MCP Flight Server'
-//         isEnabled: true
-//         type: 'User'
-//         value: 'flight_reservation_information'
-//       }
-//     ]
-//   }
-// }
+module HotelMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Hotel MCP Server'
+    appUniqueName: webapp.outputs.mcpHotelWebAppName
+    requiredResourcceAccess: requiredResourceAccess
+    webRedirectUris: [
+      'https://${webapp.outputs.mcpHotelWebAppName}.azurewebsites.net/auth/callback'
+      'http://localhost:9001/auth/callback'
+    ]
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.mcpHotelWebAppName, 'hotel_reservation_information')
+        adminConsentDescription: 'Allow the application to access the hotel information'
+        adminConsentDisplayName: 'Allow MCP Hotel Server'
+        userConsentDescription: 'Allow the application to access the hotel information.'
+        userConsentDisplayName: 'Allow MCP Hotel Server'
+        isEnabled: true
+        type: 'User'
+        value: 'hotel_reservation_information'
+      }
+    ]
+  }
+}
 
-// module HotelMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'Hotel MCP Server'
-//     appUniqueName: webapp.outputs.mcpHotelWebAppName
-//     requiredResourcceAccess: requiredResourceAccess
-//     webRedirectUris: [
-//       'https://${webapp.outputs.mcpHotelWebAppName}.azurewebsites.net/auth/callback'
-//       'http://localhost:9001/auth/callback'
-//     ]
-//     oauth2PermissionScopes: [
-//       {
-//         id: guid(webapp.outputs.mcpHotelWebAppName, 'hotel_reservation_information')
-//         adminConsentDescription: 'Allow the application to access the hotel information'
-//         adminConsentDisplayName: 'Allow MCP Hotel Server'
-//         userConsentDescription: 'Allow the application to access the hotel information.'
-//         userConsentDisplayName: 'Allow MCP Hotel Server'
-//         isEnabled: true
-//         type: 'User'
-//         value: 'hotel_reservation_information'
-//       }
-//     ]
-//   }
-// }
+module FlightAgentApi 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Flight Agent API'
+    appUniqueName: webapp.outputs.flightAgentApiResourceName
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+      {
+        resourceAppId: '18a66f5f-dbdf-4c17-9dd7-1634712a9cbe' // Azure Machine Learning Service
+        resourceAccess: [
+          {
+            id: '1a7925b5-f871-417a-9b8b-303f9f29fa10' // User impersonation know GUID
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+    oauth2PermissionScopes: [
+      {
+        id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+        adminConsentDescription: 'Access API as user'
+        adminConsentDisplayName: 'Allows the app to access the API as the user.'
+        userConsentDescription: 'Access API as you'
+        userConsentDisplayName: 'Allows the app to access the API as you.'
+        isEnabled: true
+        type: 'User'
+        value: 'user_impersonation'
+      }
+    ]
+  }
+}
 
-// module FlightAgentApi 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'Flight Agent API'
-//     appUniqueName: webapp.outputs.flightAgentApiResourceName
-//     requiredResourcceAccess: union(requiredResourceAccess, [
-//       {
-//         resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
-//         resourceAccess: [
-//           {
-//             id: guid(webapp.outputs.mcpFlightWebAppName, 'flight_reservation_information')
-//             type: 'Scope'
-//           }
-//         ]
-//       }
-//       {
-//         resourceAppId: '18a66f5f-dbdf-4c17-9dd7-1634712a9cbe' // Azure Machine Learning Service
-//         resourceAccess: [
-//           {
-//             id: '1a7925b5-f871-417a-9b8b-303f9f29fa10' // User impersonation know GUID
-//             type: 'Scope'
-//           }
-//         ]
-//       }
-//     ])
-//     oauth2PermissionScopes: [
-//       {
-//         id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
-//         adminConsentDescription: 'Access API as user'
-//         adminConsentDisplayName: 'Allows the app to access the API as the user.'
-//         userConsentDescription: 'Access API as you'
-//         userConsentDisplayName: 'Allows the app to access the API as you.'
-//         isEnabled: true
-//         type: 'User'
-//         value: 'user_impersonation'
-//       }
-//     ]
-//   }
-// }
+// App registration used for the OpenAPI swagger UI
+module OpenAPI 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'OpenAPI'
+    appUniqueName: 'openapi'
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightAgentApi.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+    spaRedirectUris: [
+      'http://localhost:8000/oauth2-redirect' // Redirect for the FlightAgentAPI
+      'https://${webapp.outputs.flightAgentApiResourceName}.azurewebsites.net/oauth2-redirect'
+    ]
+  }
+}
 
-// // App registration used for the OpenAPI swagger UI
-// module OpenAPI 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'OpenAPI'
-//     appUniqueName: 'openapi'
-//     requiredResourcceAccess: union(requiredResourceAccess, [
-//       {
-//         resourceAppId: FlightAgentApi.outputs.applicationId
-//         resourceAccess: [
-//           {
-//             id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
-//             type: 'Scope'
-//           }
-//         ]
-//       }
-//     ])
-//     spaRedirectUris: [
-//       'http://localhost:8000/oauth2-redirect' // Redirect for the FlightAgentAPI
-//       'https://${webapp.outputs.flightAgentApiResourceName}.azurewebsites.net/oauth2-redirect'
-//     ]
-//   }
-// }
-
-// module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
-//   scope: rg
-//   params: {
-//     appDisplayName: 'Front-End Chatbot Trip Reservation'
-//     appUniqueName: webapp.outputs.frontEndWebAppName
-//     requiredResourcceAccess: union(requiredResourceAccess, [
-//       {
-//         resourceAppId: FlightAgentApi.outputs.applicationId
-//         resourceAccess: [
-//           {
-//             id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
-//             type: 'Scope'
-//           }
-//         ]
-//       }
-//     ])
-//     spaRedirectUris: [
-//       'https://${webapp.outputs.frontEndWebAppName}.azurewebsites.net'
-//       'http://localhost:4200'
-//     ]
-//   }
-// }
+module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Front-End Chatbot Trip Reservation'
+    appUniqueName: webapp.outputs.frontEndWebAppName
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: FlightAgentApi.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+    spaRedirectUris: [
+      'https://${webapp.outputs.frontEndWebAppName}.azurewebsites.net'
+      'http://localhost:4200'
+    ]
+  }
+}
 
 // Foundry
 
@@ -356,8 +351,8 @@ output virtual_network_resource_name string = bringYourOwnResource == true
   ? virtualNetwork!.outputs.virtualNetworkResourceName
   : ''
 output cosmos_db_name string = db.outputs.resourceName
-// output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
-// output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
+output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
+output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
 output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
 output hotel_flight_webapp_name string = webapp.outputs.mcpHotelWebAppName
 output azure_container_registry_name string = containerRegistry.outputs.resourceName
@@ -368,5 +363,5 @@ output foundry_resource_name string = foundry.outputs.foundryResourceName
 output project_name string = foundry.outputs.projectName
 output azure_openai_model string = foundry.outputs.modelName
 output application_insight_resource_name string = monitoring.outputs.appInsightResourceName
-// output flight_agent_api_client_id string = FlightAgentApi.outputs.applicationId
-// output openapi_client_id string = OpenAPI.outputs.applicationId
+output flight_agent_api_client_id string = FlightAgentApi.outputs.applicationId
+output openapi_client_id string = OpenAPI.outputs.applicationId
