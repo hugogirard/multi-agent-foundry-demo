@@ -12,6 +12,7 @@ on:
                     - all
                     - delete-app-registration
                     - create-azure-resources
+                    - create-app-registrations
                     - update-mcp-foundry-connection
                     - grant-admin-consent
 
@@ -64,9 +65,8 @@ jobs:
                   echo "AZURE_RESOURCE_GROUP=$(jq -r '.azure_resource_group.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "VIRTUAL_NETWORK_RESOURCE_NAME=$(jq -r '.virtual_network_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "COSMOS_DB_NAME=$(jq -r '.cosmos_db_name.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "FLIGHT_MCP_SERVER_CLIENT_ID=$(jq -r '.flight_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(jq -r '.foundry_connection_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "MCP_FLIGHT_WEBAPP_NAME=$(jq -r '.mcp_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "MCP_HOTEL_WEBAPP_NAME=$(jq -r '.hotel_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_CONTAINER_REGISTRY_NAME=$(jq -r '.azure_container_registry_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "BRING_YOUR_OWN_RESOURCE=$(jq -r '.bring_your_own_resource.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "FLIGHT_AGENT_API_WEBAPP_NAME=$(jq -r '.flight_agent_api_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
@@ -75,8 +75,6 @@ jobs:
                   echo "PROJECT_NAME=$(jq -r '.project_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_OPENAI_MODEL=$(jq -r '.azure_openai_model.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "APPLICATION_INSIGHT_RESOURCE_NAME=$(jq -r '.application_insight_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "FLIGHT_AGENT_API_CLIENT_ID=$(jq -r '.flight_agent_api_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "OPENAPI_CLIENT_ID=$(jq -r '.openapi_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
 
             - name: Set secrets using gh CLI
               env:
@@ -85,9 +83,8 @@ jobs:
                   gh secret set AZURE_RESOURCE_GROUP --body "${{ steps.createResources.outputs.AZURE_RESOURCE_GROUP }}"
                   gh secret set VIRTUAL_NETWORK_RESOURCE_NAME --body "${{ steps.createResources.outputs.VIRTUAL_NETWORK_RESOURCE_NAME }}"
                   gh secret set COSMOS_DB_NAME --body "${{ steps.createResources.outputs.COSMOS_DB_NAME }}"
-                  gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
-                  gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
                   gh secret set MCP_FLIGHT_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_FLIGHT_WEBAPP_NAME }}"
+                  gh secret set MCP_HOTEL_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_HOTEL_WEBAPP_NAME }}"
                   gh secret set AZURE_CONTAINER_REGISTRY_NAME --body "${{ steps.createResources.outputs.AZURE_CONTAINER_REGISTRY_NAME }}"
                   gh secret set BRING_YOUR_OWN_RESOURCE --body "${{ steps.createResources.outputs.BRING_YOUR_OWN_RESOURCE }}"
                   gh secret set FLIGHT_AGENT_API_WEBAPP_NAME --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_WEBAPP_NAME }}"
@@ -96,8 +93,54 @@ jobs:
                   gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
                   gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
                   gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
-                  gh secret set FLIGHT_AGENT_API_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_CLIENT_ID }}"
-                  gh secret set OPENAPI_CLIENT_ID --body "${{ steps.createResources.outputs.OPENAPI_CLIENT_ID }}"
+
+    # -----------------------------------------------------------------
+    # Post-provision: create Entra app registrations via az CLI
+    # -----------------------------------------------------------------
+    # Workaround for https://github.com/microsoftgraph/msgraph-bicep-types/issues/299
+    # The Microsoft Graph Bicep extension v1.0:1.0.0 cannot resolve appId on fresh deployments.
+    # -----------------------------------------------------------------
+    create-app-registrations:
+        needs: create-azure-resources
+        if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'create-azure-resources')
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Create App Registrations
+              id: appRegistrations
+              run: |
+                  chmod +x ./scripts/create-app-registrations.sh
+                  ./scripts/create-app-registrations.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+                  # Retrieve client IDs for secrets
+                  FLIGHT_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Flight MCP Server" --query "[0].appId" -o tsv)
+                  HOTEL_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Hotel MCP Server" --query "[0].appId" -o tsv)
+                  FLIGHT_AGENT_API_CLIENT_ID=$(az ad app list --display-name "Flight Agent API" --query "[0].appId" -o tsv)
+                  FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(az ad app list --display-name "Foundry MCP Flight Server" --query "[0].appId" -o tsv)
+                  OPENAPI_CLIENT_ID=$(az ad app list --display-name "OpenAPI" --query "[0].appId" -o tsv)
+
+                  echo "FLIGHT_MCP_SERVER_CLIENT_ID=$FLIGHT_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
+                  echo "HOTEL_MCP_SERVER_CLIENT_ID=$HOTEL_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
+                  echo "FLIGHT_AGENT_API_CLIENT_ID=$FLIGHT_AGENT_API_CLIENT_ID" >> $GITHUB_OUTPUT
+                  echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$FOUNDRY_CONNECTION_MCP_CLIENT_ID" >> $GITHUB_OUTPUT
+                  echo "OPENAPI_CLIENT_ID=$OPENAPI_CLIENT_ID" >> $GITHUB_OUTPUT
+
+            - name: Set app registration secrets
+              env:
+                  GH_TOKEN: ${{ secrets.PA_TOKEN }}
+              run: |
+                  gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
+                  gh secret set HOTEL_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.HOTEL_MCP_SERVER_CLIENT_ID }}"
+                  gh secret set FLIGHT_AGENT_API_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FLIGHT_AGENT_API_CLIENT_ID }}"
+                  gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
+                  gh secret set OPENAPI_CLIENT_ID --body "${{ steps.appRegistrations.outputs.OPENAPI_CLIENT_ID }}"
 
     # -----------------------------------------------------------------
     # Post-provision: wire up the Foundry MCP connection
@@ -110,7 +153,7 @@ jobs:
     # See scripts/deploy-foundry-connection.sh for full details.
     # -----------------------------------------------------------------
     update-mcp-foundry-connection:
-        needs: create-azure-resources
+        needs: create-app-registrations
         if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'update-mcp-foundry-connection')
         runs-on: ubuntu-latest
 
@@ -140,7 +183,7 @@ jobs:
     # Post-provision: grant admin consent for all app registrations
     # -----------------------------------------------------------------
     grant-admin-consent:
-        needs: create-azure-resources
+        needs: create-app-registrations
         if: always() && (inputs.job_to_run == 'all' || inputs.job_to_run == 'grant-admin-consent')
         runs-on: ubuntu-latest
 
