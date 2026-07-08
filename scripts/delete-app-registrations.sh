@@ -70,11 +70,19 @@ done
 
 echo -e "\n${CYAN}Purging soft-deleted app registrations...${NC}"
 
+purge_failed=false
+
 for displayName in "${appDisplayNames[@]}"; do
     echo -e "\n${YELLOW}Checking deleted items for '$displayName'...${NC}"
 
     url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
-    deletedApps=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+    deletedApps=$(az rest --method GET --url "$url" --query "value" -o json)
+
+    if [ $? -ne 0 ]; then
+        echo -e "  ${RED}ERROR: Failed to query deleted items for '$displayName'. Check permissions (Directory.ReadWrite.All required).${NC}"
+        purge_failed=true
+        continue
+    fi
 
     if [ -z "$deletedApps" ] || [ "$deletedApps" = "[]" ] || [ "$deletedApps" = "null" ]; then
         echo -e "  ${GRAY}No soft-deleted items found - skipping.${NC}"
@@ -88,12 +96,33 @@ for displayName in "${appDisplayNames[@]}"; do
 
         echo -e "  Permanently deleting soft-deleted app (Object ID: $objectId)..."
 
-        if az rest --method DELETE --url "https://graph.microsoft.com/v1.0/directory/deletedItems/$objectId" 2>/dev/null; then
+        if az rest --method DELETE --url "https://graph.microsoft.com/v1.0/directory/deletedItems/$objectId"; then
             echo -e "  ${GREEN}Purged '$displayName'.${NC}"
         else
-            echo -e "  ${RED}WARNING: Failed to purge '$displayName' (Object ID: $objectId). You may need to remove it manually from Entra ID > Deleted applications.${NC}"
+            echo -e "  ${RED}ERROR: Failed to purge '$displayName' (Object ID: $objectId).${NC}"
+            purge_failed=true
         fi
     done
 done
 
-echo -e "\n${CYAN}App registration cleanup complete.${NC}"
+# --- Phase 3: Verify no soft-deleted apps remain ---
+
+echo -e "\n${CYAN}Verifying all soft-deleted apps are purged...${NC}"
+
+for displayName in "${appDisplayNames[@]}"; do
+    url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
+    remaining=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+
+    if [ -n "$remaining" ] && [ "$remaining" != "[]" ] && [ "$remaining" != "null" ]; then
+        echo -e "  ${RED}ERROR: '$displayName' still exists in deleted items after purge attempt.${NC}"
+        purge_failed=true
+    fi
+done
+
+if [ "$purge_failed" = true ]; then
+    echo -e "\n${RED}FATAL: Purge incomplete — soft-deleted apps still exist. Deployment will fail due to uniqueName conflicts.${NC}"
+    echo -e "${RED}Fix: Manually purge from Entra ID > App registrations > Deleted applications, or grant Directory.ReadWrite.All to the service principal.${NC}"
+    exit 1
+fi
+
+echo -e "\n${GREEN}App registration cleanup complete. All apps purged successfully.${NC}"

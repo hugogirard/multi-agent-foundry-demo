@@ -90,7 +90,7 @@ resource connectionStorage 'Microsoft.CognitiveServices/accounts/connections@202
     category: 'AzureStorageAccount'
     authType: 'AAD'
     isSharedToAll: true
-    target: 'https://${storageResourceName}.blob.core.windows.net'
+    target: 'https://${storageResourceName}.blob.${environment().suffixes.storage}'
     metadata: {
       ApiType: 'Azure'
       ResourceId: storage.id
