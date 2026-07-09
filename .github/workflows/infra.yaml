@@ -162,9 +162,11 @@ jobs:
     # -----------------------------------------------------------------
     update-mcp-foundry-connection:
         needs: create-azure-resources
-        if: inputs.job_to_run == 'all' || inputs.job_to_run == 'update-mcp-foundry-connection'
+        if: |
+            always() &&
+            (inputs.job_to_run == 'update-mcp-foundry-connection' ||
+             (inputs.job_to_run == 'all' && needs.create-azure-resources.result == 'success'))
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v6
 
@@ -192,9 +194,11 @@ jobs:
     # -----------------------------------------------------------------
     grant-admin-consent:
         needs: create-azure-resources
-        if: inputs.job_to_run == 'all' || inputs.job_to_run == 'grant-admin-consent'
+        if: |
+            always() &&
+            (inputs.job_to_run == 'grant-admin-consent' ||
+             (inputs.job_to_run == 'all' && needs.create-azure-resources.result == 'success'))
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v6
 
