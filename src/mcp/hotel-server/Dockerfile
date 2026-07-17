@@ -24,4 +24,4 @@ COPY . .
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:9000", "-k", "uvicorn.workers.UvicornWorker", "main:app"]
+CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:9001", "-k", "uvicorn.workers.UvicornWorker", "main:app"]
