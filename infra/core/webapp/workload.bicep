@@ -70,6 +70,10 @@ resource conversationApi 'Microsoft.Web/sites@2025-03-01' = {
           value: ''
         }
         {
+          name: 'RUNNING_IN_PRODUCTION'
+          value: 'true'
+        }
+        {
           name: 'DOCKER_REGISTRY_SERVER_URL'
           value: 'https://${acr.properties.loginServer}'
         }
@@ -118,6 +122,10 @@ resource mcpHotel 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
+        }
+        {
+          name: 'RUNNING_IN_PRODUCTION'
+          value: 'true'
         }
         {
           name: 'COSMOS_DB_CONNECTION_STRING'
@@ -192,6 +200,10 @@ resource mcpFlight 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'FLIGHT_CONTAINER'
           value: 'flight'
+        }
+        {
+          name: 'RUNNING_IN_PRODUCTION'
+          value: 'true'
         }
         {
           name: 'REDIRECT_URL'
