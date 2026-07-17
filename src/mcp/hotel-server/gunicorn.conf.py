@@ -7,6 +7,7 @@ max_requests_jitter = 50
 log_file = "-"
 
 bind = "0.0.0.0:9001"
+forwarded_allow_ips = "*"
 
 if not os.getenv("RUNNING_IN_PRODUCTION"):
     reload = True
