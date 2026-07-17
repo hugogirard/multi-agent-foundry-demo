@@ -29,6 +29,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Assign Azure AI Developer role to service principal
+        run: |
+          CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+          SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')
+          OBJECT_ID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv)
+          az role assignment create \
+            --assignee "$OBJECT_ID" \
+            --role "Azure AI Developer" \
+            --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/${{ secrets.AZURE_RESOURCE_GROUP }}/providers/Microsoft.CognitiveServices/accounts/${{ secrets.FOUNDRY_RESOURCE_NAME }}
+
       - name: Run agents creation script
         id: create-agent
         env:
