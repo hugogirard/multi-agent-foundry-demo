@@ -10,13 +10,14 @@ on:
         type: choice
         options:
           - all
-          - mcp-server
+          - flight-mcp-server
+          - hotel-mcp-server
           - conversation-api
           - frontend
 
 jobs:
-  deploy-mcp-server:
-    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'mcp-server' }}
+  deploy-flight-mcp-server:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'flight-mcp-server' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -63,6 +64,55 @@ jobs:
         with:
           app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
           images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-flight-server:${{ github.sha }}"
+
+  deploy-hotel-mcp-server:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'hotel-mcp-server' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and Push image
+        run: |
+          az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t mcp-hotel-server:${{ github.sha }} -t mcp-hotel-server:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+        working-directory: src/mcp/hotel-server
+
+      - name: Generate App Secret
+        id: generate-secret
+        run: |
+          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
+          for attempt in 1 2 3; do
+            SECRET=$(az rest --method POST \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
+            --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
+            --query secretText -o tsv 2>/dev/null) && break
+            echo "Attempt $attempt failed (concurrency conflict). Retrying in $((attempt * 15))s..."
+            sleep $((attempt * 15))
+          done
+          if [ -z "$SECRET" ]; then echo "ERROR: Failed to generate app secret after 3 attempts." >&2; exit 1; fi
+          echo "::add-mask::$SECRET"
+          echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Set App Settings
+        uses: Azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+          app-settings-json: |
+            [
+              { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}" },
+              { "name": "ENTRA_CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" }
+            ]
+
+      - uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{secrets.MCP_HOTEL_WEBAPP_NAME}}
+          images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-hotel-server:${{ github.sha }}"
 
   deploy-conversation-api:
     if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'conversation-api' }}

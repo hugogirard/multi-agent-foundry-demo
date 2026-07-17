@@ -66,6 +66,7 @@ jobs:
                   echo "VIRTUAL_NETWORK_RESOURCE_NAME=$(jq -r '.virtual_network_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "COSMOS_DB_NAME=$(jq -r '.cosmos_db_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "FLIGHT_MCP_SERVER_CLIENT_ID=$(jq -r '.flight_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "HOTEL_MCP_SERVER_CLIENT_ID=$(jq -r '.hotel_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT                  
                   echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(jq -r '.foundry_connection_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "MCP_FLIGHT_WEBAPP_NAME=$(jq -r '.mcp_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "MCP_HOTEL_WEBAPP_NAME=$(jq -r '.hotel_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
@@ -88,6 +89,7 @@ jobs:
                   gh secret set VIRTUAL_NETWORK_RESOURCE_NAME --body "${{ steps.createResources.outputs.VIRTUAL_NETWORK_RESOURCE_NAME }}"
                   gh secret set COSMOS_DB_NAME --body "${{ steps.createResources.outputs.COSMOS_DB_NAME }}"
                   gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
+                  gh secret set HOTEL_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.HOTEL_MCP_SERVER_CLIENT_ID }}"                  
                   gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
                   gh secret set MCP_FLIGHT_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_FLIGHT_WEBAPP_NAME }}"
                   gh secret set MCP_HOTEL_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_HOTEL_WEBAPP_NAME }}"

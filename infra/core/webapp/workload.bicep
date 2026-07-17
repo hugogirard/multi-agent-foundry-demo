@@ -128,7 +128,7 @@ resource mcpHotel 'Microsoft.Web/sites@2025-03-01' = {
           value: 'ContosoAgency'
         }
         {
-          name: 'FLIGHT_CONTAINER'
+          name: 'HOTEL_CONTAINER'
           value: 'hotel'
         }
         {

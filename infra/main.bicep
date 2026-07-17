@@ -352,6 +352,7 @@ output virtual_network_resource_name string = bringYourOwnResource == true
   : ''
 output cosmos_db_name string = db.outputs.resourceName
 output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
+output hotel_mcp_server_client_id string = HotelMcpServerAppRegistration.outputs.applicationId
 output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
 output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
 output hotel_flight_webapp_name string = webapp.outputs.mcpHotelWebAppName
