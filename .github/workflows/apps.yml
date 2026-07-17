@@ -37,10 +37,15 @@ jobs:
         id: generate-secret
         run: |
           APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
-          SECRET=$(az rest --method POST \
-          --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
-          --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
-          --query secretText -o tsv)
+          for attempt in 1 2 3; do
+            SECRET=$(az rest --method POST \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
+            --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
+            --query secretText -o tsv 2>/dev/null) && break
+            echo "Attempt $attempt failed (concurrency conflict). Retrying in $((attempt * 15))s..."
+            sleep $((attempt * 15))
+          done
+          if [ -z "$SECRET" ]; then echo "ERROR: Failed to generate app secret after 3 attempts." >&2; exit 1; fi
           echo "::add-mask::$SECRET"
           echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
 
@@ -81,10 +86,15 @@ jobs:
         id: generate-secret
         run: |
           APP_OBJECT_ID=$(az ad app show --id ${{ secrets.CONVERSATION_API_CLIENT_ID }} --query id -o tsv)
-          SECRET=$(az rest --method POST \
-          --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
-          --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
-          --query secretText -o tsv)
+          for attempt in 1 2 3; do
+            SECRET=$(az rest --method POST \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
+            --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
+            --query secretText -o tsv 2>/dev/null) && break
+            echo "Attempt $attempt failed (concurrency conflict). Retrying in $((attempt * 15))s..."
+            sleep $((attempt * 15))
+          done
+          if [ -z "$SECRET" ]; then echo "ERROR: Failed to generate app secret after 3 attempts." >&2; exit 1; fi
           echo "::add-mask::$SECRET"
           echo "CLIENT_SECRET=$SECRET" >> "$GITHUB_OUTPUT"
 

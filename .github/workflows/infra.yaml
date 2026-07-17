@@ -176,7 +176,7 @@ jobs:
                   creds: ${{ secrets.AZURE_CREDENTIALS }}
 
             - name: Wait for App Registration propagation
-              run: sleep 120
+              run: sleep 180
 
             - name: Update Foundry MCP Connection
               env:
