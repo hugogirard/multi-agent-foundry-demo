@@ -117,7 +117,7 @@ module webapp 'core/webapp/workload.bicep' = {
     containerRegistryName: containerRegistry.outputs.resourceName
     mcpFlightServerName: '${abbrs.webSitesAppService}mcp-fligh-server-${resourceToken}'
     mcpHotelServerName: '${abbrs.webSitesAppService}mcp-hotel-server-${resourceToken}'
-    flightAgentApiResourceName: '${abbrs.webSitesAppService}flight-agent-api-${resourceToken}'
+    conversationApiResourceName: '${abbrs.webSitesAppService}conversation-api-${resourceToken}'
     clientWebAppName: '${abbrs.webSitesAppService}frontend-${resourceToken}'
     tags: tags
     cosmosDbResourceName: db.outputs.resourceName
@@ -208,11 +208,11 @@ module HotelMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
   }
 }
 
-module FlightAgentApi 'core/entra/app.registration.bicep' = {
+module ConversationApi 'core/entra/app.registration.bicep' = {
   scope: rg
   params: {
-    appDisplayName: 'Flight Agent API'
-    appUniqueName: webapp.outputs.flightAgentApiResourceName
+    appDisplayName: 'Conversation API'
+    appUniqueName: webapp.outputs.conversationApiResourceName
     requiredResourcceAccess: union(requiredResourceAccess, [
       {
         resourceAppId: FlightMcpServerAppRegistration.outputs.applicationId
@@ -235,7 +235,7 @@ module FlightAgentApi 'core/entra/app.registration.bicep' = {
     ])
     oauth2PermissionScopes: [
       {
-        id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+        id: guid(webapp.outputs.conversationApiResourceName, 'user_impersonation')
         adminConsentDescription: 'Access API as user'
         adminConsentDisplayName: 'Allows the app to access the API as the user.'
         userConsentDescription: 'Access API as you'
@@ -256,18 +256,18 @@ module OpenAPI 'core/entra/app.registration.bicep' = {
     appUniqueName: 'openapi'
     requiredResourcceAccess: union(requiredResourceAccess, [
       {
-        resourceAppId: FlightAgentApi.outputs.applicationId
+        resourceAppId: ConversationApi.outputs.applicationId
         resourceAccess: [
           {
-            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+            id: guid(webapp.outputs.conversationApiResourceName, 'user_impersonation')
             type: 'Scope'
           }
         ]
       }
     ])
     spaRedirectUris: [
-      'http://localhost:8000/oauth2-redirect' // Redirect for the FlightAgentAPI
-      'https://${webapp.outputs.flightAgentApiResourceName}.azurewebsites.net/oauth2-redirect'
+      'http://localhost:8000/oauth2-redirect' // Redirect for the ConversationAPI
+      'https://${webapp.outputs.conversationApiResourceName}.azurewebsites.net/oauth2-redirect'
     ]
   }
 }
@@ -279,10 +279,10 @@ module frontEndAppRegistration 'core/entra/app.registration.bicep' = {
     appUniqueName: webapp.outputs.frontEndWebAppName
     requiredResourcceAccess: union(requiredResourceAccess, [
       {
-        resourceAppId: FlightAgentApi.outputs.applicationId
+        resourceAppId: ConversationApi.outputs.applicationId
         resourceAccess: [
           {
-            id: guid(webapp.outputs.flightAgentApiResourceName, 'user_impersonation')
+            id: guid(webapp.outputs.conversationApiResourceName, 'user_impersonation')
             type: 'Scope'
           }
         ]
@@ -357,11 +357,11 @@ output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
 output hotel_flight_webapp_name string = webapp.outputs.mcpHotelWebAppName
 output azure_container_registry_name string = containerRegistry.outputs.resourceName
 output bring_your_own_resource bool = bringYourOwnResource
-output flight_agent_api_webapp_name string = webapp.outputs.flightAgentApiResourceName
+output conversation_api_webapp_name string = webapp.outputs.conversationApiResourceName
 output frontend_resource_name string = webapp.outputs.frontEndWebAppName
 output foundry_resource_name string = foundry.outputs.foundryResourceName
 output project_name string = foundry.outputs.projectName
 output azure_openai_model string = foundry.outputs.modelName
 output application_insight_resource_name string = monitoring.outputs.appInsightResourceName
-output flight_agent_api_client_id string = FlightAgentApi.outputs.applicationId
+output conversation_api_client_id string = ConversationApi.outputs.applicationId
 output openapi_client_id string = OpenAPI.outputs.applicationId

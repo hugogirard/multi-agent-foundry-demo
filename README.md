@@ -6,7 +6,7 @@ This repository demonstrates a **multi-agent architecture** built on [Microsoft 
 
 ```
 ┌──────────────┐         ┌─────────────────────────────┐
-│   Angular    │  HTTP   │      Flight Agent API        │
+│   Angular    │  HTTP   │      Conversation API         │
 │   Frontend   │────────▶│  (FastAPI + Foundry SDK)     │
 └──────────────┘         └──────────┬──────────────────┘
                                     │ On-Behalf-Of flow

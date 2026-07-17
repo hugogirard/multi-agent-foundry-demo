@@ -11,7 +11,7 @@ on:
         options:
           - all
           - mcp-server
-          - flight-api
+          - conversation-api
           - frontend
 
 jobs:
@@ -59,8 +59,8 @@ jobs:
           app-name: ${{secrets.MCP_FLIGHT_WEBAPP_NAME}}
           images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/mcp-flight-server:${{ github.sha }}"
 
-  deploys-flight-api:
-    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'flight-api' }}
+  deploy-conversation-api:
+    if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'conversation-api' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -74,13 +74,13 @@ jobs:
       - name: Build and Push image
         run: |
           az acr login -n ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
-          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t flight-api:${{ github.sha }} -t flight-api:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
-        working-directory: src/api/flight-api
+          az acr build -r ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} -t conversation-api:${{ github.sha }} -t conversation-api:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+        working-directory: src/api/conversation-api
 
       - name: Generate App Secret
         id: generate-secret
         run: |
-          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_AGENT_API_CLIENT_ID }} --query id -o tsv)
+          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.CONVERSATION_API_CLIENT_ID }} --query id -o tsv)
           SECRET=$(az rest --method POST \
           --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
           --body '{"passwordCredential":{"displayName":"GitHub Actions"}}' \
@@ -91,19 +91,19 @@ jobs:
       - name: Set App Settings
         uses: Azure/appservice-settings@v1
         with:
-          app-name: ${{ secrets.FLIGHT_AGENT_API_WEBAPP_NAME }}
+          app-name: ${{ secrets.CONVERSATION_API_WEBAPP_NAME }}
           app-settings-json: |
             [
-              { "name": "AZURE_CLIENT_ID", "value": "${{ secrets.FLIGHT_AGENT_API_CLIENT_ID }}" },
-              { "name": "CLIENT_ID", "value": "${{ secrets.FLIGHT_AGENT_API_CLIENT_ID }}" },
+              { "name": "AZURE_CLIENT_ID", "value": "${{ secrets.CONVERSATION_API_CLIENT_ID }}" },
+              { "name": "CLIENT_ID", "value": "${{ secrets.CONVERSATION_API_CLIENT_ID }}" },
               { "name": "CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" },
               { "name": "OPENAPI", "value": "${{ secrets.OPENAPI_CLIENT_ID }}" }
             ]
 
       - uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{secrets.FLIGHT_AGENT_API_WEBAPP_NAME}}
-          images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/flight-api:${{ github.sha }}"
+          app-name: ${{secrets.CONVERSATION_API_WEBAPP_NAME}}
+          images: "${{secrets.AZURE_CONTAINER_REGISTRY_NAME}}.azurecr.io/conversation-api:${{ github.sha }}"
 
   deploy-frontend:
     if: ${{ github.event.inputs.deploy-target == 'all' || github.event.inputs.deploy-target == 'frontend' }}
@@ -128,8 +128,8 @@ jobs:
 
           sed -i "s|__clientId__|$FRONTEND_CLIENT_ID|g" src/app/environments/environment.prod.ts
           sed -i "s|__authority__|https://login.microsoftonline.com/$TENANT_ID|g" src/app/environments/environment.prod.ts
-          sed -i "s|__apiScopes__|api://${{ secrets.FLIGHT_AGENT_API_WEBAPP_NAME }}/user_impersonation|g" src/app/environments/environment.prod.ts
-          sed -i "s|__apiBaseUrl__|https://${{ secrets.FLIGHT_AGENT_API_WEBAPP_NAME }}.azurewebsites.net|g" src/app/environments/environment.prod.ts
+          sed -i "s|__apiScopes__|api://${{ secrets.CONVERSATION_API_WEBAPP_NAME }}/user_impersonation|g" src/app/environments/environment.prod.ts
+          sed -i "s|__apiBaseUrl__|https://${{ secrets.CONVERSATION_API_WEBAPP_NAME }}.azurewebsites.net|g" src/app/environments/environment.prod.ts
           sed -i "s|__redirectUrl__|https://${{ secrets.FRONTEND_RESOURCE_NAME }}.azurewebsites.net|g" src/app/environments/environment.prod.ts
           sed -i "s|__appInsightKey__|$APP_INSIGHT_CNX|g" src/app/environments/environment.prod.ts
         working-directory: src/frontend

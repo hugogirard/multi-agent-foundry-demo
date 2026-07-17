@@ -116,13 +116,13 @@ if (-not $mcpClientId) {
 }
 Write-Host "  Flight MCP Server Client ID: $mcpClientId"
 
-Write-Host "Looking up Flight Agent API app registration..."
-$flightApiClientId = Get-AppClientId -DisplayName "Flight Agent API"
-if (-not $flightApiClientId) {
-    Write-Error "Could not find 'Flight Agent API' app registration."
+Write-Host "Looking up Conversation API app registration..."
+$conversationApiClientId = Get-AppClientId -DisplayName "Conversation API"
+if (-not $conversationApiClientId) {
+    Write-Error "Could not find 'Conversation API' app registration."
     exit 1
 }
-Write-Host "  Flight Agent API Client ID: $flightApiClientId"
+Write-Host "  Conversation API Client ID: $conversationApiClientId"
 
 Write-Host "Looking up OpenAPI app registration..."
 $openApiClientId = Get-AppClientId -DisplayName "OpenAPI"
@@ -152,7 +152,7 @@ Write-Host "  Foundry MCP Flight Server Client ID: $foundryMcpClientId"
 
 Grant-AdminConsentViaGraph -AppId $mcpClientId         -Label "Flight MCP Server"
 Grant-AdminConsentViaGraph -AppId $foundryMcpClientId   -Label "Foundry MCP Flight Server"
-Grant-AdminConsentViaGraph -AppId $flightApiClientId    -Label "Flight Agent API"
+Grant-AdminConsentViaGraph -AppId $conversationApiClientId    -Label "Conversation API"
 Grant-AdminConsentViaGraph -AppId $openApiClientId      -Label "OpenAPI"
 Grant-AdminConsentViaGraph -AppId $frontEndClientId     -Label "Front-End Chatbot Trip Reservation"
 

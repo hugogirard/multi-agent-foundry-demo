@@ -1,4 +1,4 @@
-param flightAgentApiResourceName string
+param conversationApiResourceName string
 param mcpFlightServerName string
 param mcpHotelServerName string
 param clientWebAppName string
@@ -30,8 +30,8 @@ resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' existing = {
   name: containerRegistryName
 }
 
-resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
-  name: flightAgentApiResourceName
+resource conversationApi 'Microsoft.Web/sites@2025-03-01' = {
+  name: conversationApiResourceName
   location: location
   tags: union(tags, { 'azd-service-name': 'mcpflight' })
   properties: {
@@ -51,7 +51,7 @@ resource flightApi 'Microsoft.Web/sites@2025-03-01' = {
         }
         {
           name: 'SCOPE_URI'
-          value: 'api://${flightAgentApiResourceName}/user_impersonation'
+          value: 'api://${conversationApiResourceName}/user_impersonation'
         }
         {
           name: 'AGENT_NAME'
@@ -257,4 +257,4 @@ resource frontEnd 'Microsoft.Web/sites@2025-03-01' = {
 output mcpFlightWebAppName string = mcpFlight.name
 output mcpHotelWebAppName string = mcpHotel.name
 output frontEndWebAppName string = frontEnd.name
-output flightAgentApiResourceName string = flightApi.name
+output conversationApiResourceName string = conversationApi.name

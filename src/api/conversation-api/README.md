@@ -1,4 +1,4 @@
-# Flight Agent API
+# Conversation API
 
 ## Architecture
 
@@ -7,20 +7,20 @@ The solution follows a multi-hop On-Behalf-Of (OBO) authentication flow where ea
 ```mermaid
 sequenceDiagram
     participant SPA as Client (SPA)
-    participant API as Flight Agent API
+    participant API as Conversation API
     participant Foundry as Agent Foundry
     participant MCP as MCP Flight Server
 
     Note over SPA: App Registration:<br/>SPA Client
 
-    Note over API: App Registration:<br/>Flight Agent API
+    Note over API: App Registration:<br/>Conversation API
 
     Note over Foundry: Azure Machine Learning
 
     Note over MCP: App Registration:<br/>Flight MCP Server
 
     SPA->>SPA: User signs in (MSAL, PKCE)
-    SPA->>API: Request + Bearer token (scoped to Flight Agent API)
+    SPA->>API: Request + Bearer token (scoped to Conversation API)
 
     API->>API: Validate token (EntraID)
     API->>API: OBO exchange: user token → Foundry token
@@ -42,8 +42,8 @@ Each arrow in the diagram represents a token exchange via the **On-Behalf-Of (OB
 
 | Hop | From | To | Permission Required |
 |-----|------|----|---------------------|
-| 1 | SPA | Flight Agent API | `api://<API_CLIENT_ID>/user_impersonation` |
-| 2 | Flight Agent API | Azure Machine Learning (Foundry) | `Azure Machine Learning / user_impersonation` |
+| 1 | SPA | Conversation API | `api://<API_CLIENT_ID>/user_impersonation` |
+| 2 | Conversation API | Azure Machine Learning (Foundry) | `Azure Machine Learning / user_impersonation` |
 | 3 | Agent Foundry | Flight MCP Server | `api://<MCP_CLIENT_ID>/flight_reservation_information` |
 
 ### Why each permission is needed
@@ -63,8 +63,8 @@ Without these, EntraID returns `AADSTS65001 (consent_required)` because it has n
 | `AGENT_VERSION` | Foundry agent version |
 | `AZURE_CLIENT_ID` | Managed identity client ID (for deployed scenarios) |
 | `TENANT_ID` | Entra ID tenant ID |
-| `CLIENT_ID` | Flight Agent API app registration client ID |
-| `CLIENT_SECRET` | Flight Agent API app registration client secret |
+| `CLIENT_ID` | Conversation API app registration client ID |
+| `CLIENT_SECRET` | Conversation API app registration client secret |
 | `FOUNDRY_PROJECT_ENDPOINT` | Azure AI Foundry project endpoint |
 | `OPENAPI` | OpenAPI/Swagger client ID (for Swagger UI OAuth) |
 | `SCOPE_URI` | API scope URI |

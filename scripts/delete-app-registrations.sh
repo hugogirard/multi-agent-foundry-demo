@@ -15,12 +15,12 @@ NC='\033[0m' # No Color
 
 echo -e "\n${CYAN}Deleting app registrations created by this project...${NC}"
 
-# Delete dependents first (OpenAPI, Front-End depend on Flight Agent API; Foundry MCP depends on Flight MCP Server)
+# Delete dependents first (OpenAPI, Front-End depend on Conversation API; Foundry MCP depends on Flight MCP Server)
 appDisplayNames=(
     "OpenAPI"
     "Front-End Chatbot Trip Reservation"
     "Foundry MCP Flight Server"
-    "Flight Agent API"
+    "Conversation API"
     "Flight MCP Server"
 )
 
@@ -68,6 +68,9 @@ done
 
 # --- Phase 2: Permanently purge soft-deleted app registrations ---
 
+echo -e "\n${CYAN}Waiting 30s for Entra ID replication before purge...${NC}"
+sleep 30
+
 echo -e "\n${CYAN}Purging soft-deleted app registrations...${NC}"
 
 purge_failed=false
@@ -105,7 +108,7 @@ for displayName in "${appDisplayNames[@]}"; do
     done
 done
 
-# --- Phase 3: Verify no soft-deleted apps remain (with retry for replication delay) ---
+# --- Phase 3: Verify and re-purge any remaining soft-deleted apps (handles replication lag) ---
 
 echo -e "\n${CYAN}Waiting 30s for Entra ID replication before verification...${NC}"
 sleep 30
@@ -114,7 +117,7 @@ max_retries=3
 retry_delay=30
 
 for attempt in $(seq 1 $max_retries); do
-    echo -e "\n${CYAN}Verification attempt $attempt/$max_retries...${NC}"
+    echo -e "\n${CYAN}Verification/purge attempt $attempt/$max_retries...${NC}"
     verification_failed=false
 
     for displayName in "${appDisplayNames[@]}"; do
@@ -122,14 +125,38 @@ for attempt in $(seq 1 $max_retries); do
         remaining=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
 
         if [ -n "$remaining" ] && [ "$remaining" != "[]" ] && [ "$remaining" != "null" ]; then
-            echo -e "  ${YELLOW}'$displayName' still exists in deleted items (replication may be pending).${NC}"
-            verification_failed=true
+            remainingCount=$(echo "$remaining" | jq length)
+            for i in $(seq 0 $((remainingCount - 1))); do
+                objectId=$(echo "$remaining" | jq -r ".[$i].id")
+                echo -e "  ${YELLOW}'$displayName' still in deleted items — attempting purge (Object ID: $objectId)...${NC}"
+                if az rest --method DELETE --url "https://graph.microsoft.com/v1.0/directory/deletedItems/$objectId" 2>/dev/null; then
+                    echo -e "  ${GREEN}Purged '$displayName'.${NC}"
+                else
+                    echo -e "  ${RED}Failed to purge '$displayName' (Object ID: $objectId).${NC}"
+                    verification_failed=true
+                fi
+            done
         fi
     done
 
     if [ "$verification_failed" = false ]; then
-        echo -e "  ${GREEN}All soft-deleted apps confirmed purged.${NC}"
-        break
+        # Give a short window for the purge to replicate, then confirm
+        sleep 10
+        all_clear=true
+        for displayName in "${appDisplayNames[@]}"; do
+            url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
+            check=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+            if [ -n "$check" ] && [ "$check" != "[]" ] && [ "$check" != "null" ]; then
+                all_clear=false
+                break
+            fi
+        done
+        if [ "$all_clear" = true ]; then
+            echo -e "  ${GREEN}All soft-deleted apps confirmed purged.${NC}"
+            break
+        else
+            echo -e "  ${YELLOW}Purge issued but items still visible — retrying...${NC}"
+        fi
     fi
 
     if [ $attempt -lt $max_retries ]; then
@@ -138,8 +165,19 @@ for attempt in $(seq 1 $max_retries); do
     fi
 done
 
-if [ "$purge_failed" = true ] || [ "$verification_failed" = true ]; then
-    echo -e "\n${RED}FATAL: Purge incomplete — soft-deleted apps still exist after $max_retries verification attempts.${NC}"
+# Final check
+final_failed=false
+for displayName in "${appDisplayNames[@]}"; do
+    url="https://graph.microsoft.com/v1.0/directory/deletedItems/microsoft.graph.application?\$filter=displayName eq '$displayName'&\$select=id,displayName"
+    check=$(az rest --method GET --url "$url" --query "value" -o json 2>/dev/null)
+    if [ -n "$check" ] && [ "$check" != "[]" ] && [ "$check" != "null" ]; then
+        final_failed=true
+        break
+    fi
+done
+
+if [ "$purge_failed" = true ] || [ "$final_failed" = true ]; then
+    echo -e "\n${RED}FATAL: Purge incomplete — soft-deleted apps still exist after $max_retries attempts.${NC}"
     echo -e "${RED}This will cause uniqueName conflicts during Bicep deployment.${NC}"
     echo -e "${RED}Fix: Manually purge from Entra ID > App registrations > Deleted applications, or grant Directory.ReadWrite.All to the service principal.${NC}"
     exit 1

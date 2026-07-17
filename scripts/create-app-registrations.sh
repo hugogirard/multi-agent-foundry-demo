@@ -30,15 +30,15 @@ WEBAPPS=$(az webapp list -g "$RESOURCE_GROUP" --query "[].name" -o json)
 
 MCP_FLIGHT_WEBAPP=$(echo "$WEBAPPS" | jq -r '.[] | select(contains("mcp-fligh-server"))' | head -1)
 MCP_HOTEL_WEBAPP=$(echo "$WEBAPPS" | jq -r '.[] | select(contains("mcp-hotel"))' | head -1)
-FLIGHT_API_WEBAPP=$(echo "$WEBAPPS" | jq -r '.[] | select(contains("flight-agent-api"))' | head -1)
+CONVERSATION_API_WEBAPP=$(echo "$WEBAPPS" | jq -r '.[] | select(contains("conversation-api"))' | head -1)
 FRONTEND_WEBAPP=$(echo "$WEBAPPS" | jq -r '.[] | select(contains("frontend"))' | head -1)
 
 echo -e "  MCP Flight: $MCP_FLIGHT_WEBAPP"
 echo -e "  MCP Hotel: $MCP_HOTEL_WEBAPP"
-echo -e "  Flight API: $FLIGHT_API_WEBAPP"
+echo -e "  Conversation API: $CONVERSATION_API_WEBAPP"
 echo -e "  Frontend: $FRONTEND_WEBAPP"
 
-if [ -z "$MCP_FLIGHT_WEBAPP" ] || [ -z "$FLIGHT_API_WEBAPP" ] || [ -z "$FRONTEND_WEBAPP" ]; then
+if [ -z "$MCP_FLIGHT_WEBAPP" ] || [ -z "$CONVERSATION_API_WEBAPP" ] || [ -z "$FRONTEND_WEBAPP" ]; then
     echo -e "${RED}ERROR: Could not discover all webapp names. Ensure Bicep deployment completed.${NC}"
     exit 1
 fi
@@ -179,12 +179,12 @@ fi
 # 3. Flight Agent API
 # ============================================================
 
-echo -e "\n${CYAN}3. Flight Agent API${NC}"
-FLIGHT_API_CLIENT_ID=$(create_or_update_app "Flight Agent API" "$FLIGHT_API_WEBAPP")
-ensure_sp "$FLIGHT_API_CLIENT_ID"
-add_oauth2_scope "$FLIGHT_API_CLIENT_ID" "user_impersonation" "Allows the app to access the API as the user"
-set_web_redirect_uris "$FLIGHT_API_CLIENT_ID" \
-    "https://${FLIGHT_API_WEBAPP}.azurewebsites.net" \
+echo -e "\n${CYAN}3. Conversation API${NC}"
+CONVERSATION_API_CLIENT_ID=$(create_or_update_app "Conversation API" "$CONVERSATION_API_WEBAPP")
+ensure_sp "$CONVERSATION_API_CLIENT_ID"
+add_oauth2_scope "$CONVERSATION_API_CLIENT_ID" "user_impersonation" "Allows the app to access the API as the user"
+set_web_redirect_uris "$CONVERSATION_API_CLIENT_ID" \
+    "https://${CONVERSATION_API_WEBAPP}.azurewebsites.net" \
     "http://localhost:8000"
 
 # ============================================================
@@ -206,7 +206,7 @@ OPENAPI_CLIENT_ID=$(create_or_update_app "OpenAPI" "openapi")
 ensure_sp "$OPENAPI_CLIENT_ID"
 set_spa_redirect_uris "$OPENAPI_CLIENT_ID" \
     "http://localhost:8000/oauth2-redirect" \
-    "https://${FLIGHT_API_WEBAPP}.azurewebsites.net/oauth2-redirect"
+    "https://${CONVERSATION_API_WEBAPP}.azurewebsites.net/oauth2-redirect"
 
 # ============================================================
 # 6. Front-End Chatbot Trip Reservation
@@ -226,7 +226,7 @@ set_spa_redirect_uris "$FRONTEND_CLIENT_ID" \
 echo -e "\n${GREEN}--- App Registration Summary ---${NC}"
 echo -e "  Flight MCP Server:              $FLIGHT_MCP_CLIENT_ID"
 [ -n "${HOTEL_MCP_CLIENT_ID:-}" ] && echo -e "  Hotel MCP Server:               $HOTEL_MCP_CLIENT_ID"
-echo -e "  Flight Agent API:               $FLIGHT_API_CLIENT_ID"
+echo -e "  Conversation API:               $CONVERSATION_API_CLIENT_ID"
 echo -e "  Foundry MCP Flight Server:      $FOUNDRY_MCP_CLIENT_ID"
 echo -e "  OpenAPI:                         $OPENAPI_CLIENT_ID"
 echo -e "  Front-End Chatbot:              $FRONTEND_CLIENT_ID"

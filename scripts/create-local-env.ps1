@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Creates .env files for local development of the MCP servers and Flight Agent API.
+# Creates .env files for local development of the MCP servers and Conversation API.
 # Prerequisites: Infrastructure must be deployed (Bicep via GitHub Actions) and az CLI logged in.
 
 param(
@@ -14,7 +14,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 if (-not $PSScriptRoot) { $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path) }
 if (-not $repoRoot) { $repoRoot = $PWD }
 
-Write-Host "Creating local .env files for MCP servers and Flight Agent API..." -ForegroundColor Cyan
+Write-Host "Creating local .env files for MCP servers and Conversation API..." -ForegroundColor Cyan
 Write-Host "  Resource Group: $ResourceGroup"
 Write-Host "  Repo Root: $repoRoot"
 
@@ -54,14 +54,14 @@ Write-Host "`nDiscovering Web Apps..."
 $webApps = az webapp list -g $ResourceGroup --query "[].name" -o json | ConvertFrom-Json
 
 $mcpWebAppName = $webApps | Where-Object { $_ -like '*mcp-fligh-server*' } | Select-Object -First 1
-$flightApiWebAppName = $webApps | Where-Object { $_ -like '*flight-agent-api*' } | Select-Object -First 1
+$conversationApiWebAppName = $webApps | Where-Object { $_ -like '*conversation-api*' } | Select-Object -First 1
 
 if (-not $mcpWebAppName) {
     Write-Error "Could not find MCP Flight Server web app in resource group '$ResourceGroup'."
     exit 1
 }
 Write-Host "  MCP Flight Web App: $mcpWebAppName"
-Write-Host "  Flight Agent API Web App: $flightApiWebAppName"
+Write-Host "  Conversation API Web App: $conversationApiWebAppName"
 
 # Foundry (Cognitive Services / AI Services)
 Write-Host "`nDiscovering Foundry (AI Services) account..."
@@ -95,14 +95,14 @@ if (-not $mcpClientId) {
 }
 Write-Host "  Flight MCP Server Client ID: $mcpClientId"
 
-# Flight Agent API
-Write-Host "Looking up Flight Agent API app registration..."
-$flightApiClientId = az ad app list --display-name "Flight Agent API" --query "[0].appId" -o tsv
-if (-not $flightApiClientId) {
-    Write-Error "Could not find 'Flight Agent API' app registration."
+# Conversation API
+Write-Host "Looking up Conversation API app registration..."
+$conversationApiClientId = az ad app list --display-name "Conversation API" --query "[0].appId" -o tsv
+if (-not $conversationApiClientId) {
+    Write-Error "Could not find 'Conversation API' app registration."
     exit 1
 }
-Write-Host "  Flight Agent API Client ID: $flightApiClientId"
+Write-Host "  Conversation API Client ID: $conversationApiClientId"
 
 # OpenAPI
 Write-Host "Looking up OpenAPI app registration..."
@@ -145,23 +145,23 @@ if (-not $mcpSecretValue) {
 }
 Write-Host "  MCP Flight Server secret created."
 
-# Flight Agent API secret
-Write-Host "Creating secret for Flight Agent API app registration..."
-$apiCredentials = az ad app credential list --id $flightApiClientId | ConvertFrom-Json
+# Conversation API secret
+Write-Host "Creating secret for Conversation API app registration..."
+$apiCredentials = az ad app credential list --id $conversationApiClientId | ConvertFrom-Json
 $apiExistingSecret = $apiCredentials | Where-Object { $_.displayName -eq "Local Dev" }
 
 if ($apiExistingSecret) {
     Write-Host "  Removing existing 'Local Dev' credential..."
-    az ad app credential delete --id $flightApiClientId --key-id $apiExistingSecret.keyId
+    az ad app credential delete --id $conversationApiClientId --key-id $apiExistingSecret.keyId
 }
 
-$apiSecretValue = az ad app credential reset --id $flightApiClientId --display-name "Local Dev" --query "password" -o tsv
+$apiSecretValue = az ad app credential reset --id $conversationApiClientId --display-name "Local Dev" --query "password" -o tsv
 
 if (-not $apiSecretValue) {
-    Write-Error "Failed to create Flight Agent API secret."
+    Write-Error "Failed to create Conversation API secret."
     exit 1
 }
-Write-Host "  Flight Agent API secret created."
+Write-Host "  Conversation API secret created."
 
 # Hotel MCP Server secret (only if app registration exists)
 $hotelMcpSecretValue = ""
@@ -273,20 +273,20 @@ SCOPE=hotel_reservation_information
 
 [System.IO.File]::WriteAllText("$repoRoot/src/mcp/hotel-server/.env", $hotelEnvContent, $utf8NoBom)
 
-# --- Phase 7: Write Flight Agent API .env ---
+# --- Phase 7: Write Conversation API .env ---
 
-Write-Host "Writing src/api/flight-api/.env..."
+Write-Host "Writing src/api/conversation-api/.env..."
 
-# Derive the flight agent API identifier URI for the scope
-$flightAgentApiIdentifierUri = (az ad app list --display-name "Flight Agent API" --query "[0].identifierUris[0]" -o tsv)
-if (-not $flightAgentApiIdentifierUri) {
-    $flightAgentApiIdentifierUri = "api://$flightApiWebAppName"
+# Derive the conversation API identifier URI for the scope
+$conversationApiIdentifierUri = (az ad app list --display-name "Conversation API" --query "[0].identifierUris[0]" -o tsv)
+if (-not $conversationApiIdentifierUri) {
+    $conversationApiIdentifierUri = "api://$conversationApiWebAppName"
 }
-$scopeUri = "$flightAgentApiIdentifierUri/user_impersonation"
+$scopeUri = "$conversationApiIdentifierUri/user_impersonation"
 
 $apiEnvContent = @"
-AZURE_CLIENT_ID=$flightApiClientId
-CLIENT_ID=$flightApiClientId
+AZURE_CLIENT_ID=$conversationApiClientId
+CLIENT_ID=$conversationApiClientId
 CLIENT_SECRET=$apiSecretValue
 TENANT_ID=$tenantId
 SCOPE_URI=$scopeUri
@@ -296,7 +296,7 @@ FOUNDRY_PROJECT_ENDPOINT=$foundryEndpoint
 OPENAPI=$openApiClientId
 "@
 
-[System.IO.File]::WriteAllText("$repoRoot/src/api/flight-api/.env", $apiEnvContent, $utf8NoBom)
+[System.IO.File]::WriteAllText("$repoRoot/src/api/conversation-api/.env", $apiEnvContent, $utf8NoBom)
 
 # --- Phase 8: Write Angular environment.ts ---
 
@@ -319,7 +319,7 @@ if ($appInsightName) {
 $envTsContent = @"
 export const environment = {
     production: false,
-    clientId: '$flightApiClientId',
+    clientId: '$conversationApiClientId',
     authority: 'https://login.microsoftonline.com/$tenantId',
     apiScopes: ['$scopeUri'],
     apiBaseUrl: 'http://localhost:8000',
@@ -336,7 +336,7 @@ Write-Host "`n--- Done! ---" -ForegroundColor Green
 Write-Host "Created:"
 Write-Host "  - src/mcp/flight-server/.env                        (MCP Flight Server)"
 Write-Host "  - src/mcp/hotel-server/.env                         (MCP Hotel Server$(if (-not $hotelMcpAvailable) { ' - partial, needs app registration' }))"
-Write-Host "  - src/api/flight-api/.env                           (Flight Agent API)"
+Write-Host "  - src/api/conversation-api/.env                      (Conversation API)"
 Write-Host "  - src/frontend/src/app/environments/environment.ts  (Angular frontend)"
 Write-Host ""
 Write-Host "To run locally:"

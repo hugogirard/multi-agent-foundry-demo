@@ -28,6 +28,6 @@ def get_new_session(agent_factory: Annotated[AgentFactory, Depends(get_agent_fac
         raise HTTPException(status_code=500,detail='Internal Server Error')
 
 
-@router.get(path='/token',dependencies=[Security(azure_scheme)])
-def get_token(access_token: Annotated[str,Depends(get_access_token)]) -> str:
-    return access_token
+# @router.get(path='/token',dependencies=[Security(azure_scheme)])
+# def get_token(access_token: Annotated[str,Depends(get_access_token)]) -> str:
+#     return access_token

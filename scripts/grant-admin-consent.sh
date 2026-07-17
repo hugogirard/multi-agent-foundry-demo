@@ -155,13 +155,13 @@ fi
 echo "  Foundry MCP Flight Server Client ID: $FOUNDRY_CONNECTION_MCP_CLIENT_ID"
 
 # Look up remaining apps by display name
-echo "Looking up Flight Agent API app registration..."
-flight_api_client_id=$(get_app_client_id "Flight Agent API")
-if [[ -z "$flight_api_client_id" ]]; then
-    echo "ERROR: Could not find 'Flight Agent API' app registration."
+echo "Looking up Conversation API app registration..."
+conversation_api_client_id=$(get_app_client_id "Conversation API")
+if [[ -z "$conversation_api_client_id" ]]; then
+    echo "ERROR: Could not find 'Conversation API' app registration."
     exit 1
 fi
-echo "  Flight Agent API Client ID: $flight_api_client_id"
+echo "  Conversation API Client ID: $conversation_api_client_id"
 
 echo "Looking up OpenAPI app registration..."
 openapi_client_id=$(get_app_client_id "OpenAPI")
@@ -183,7 +183,7 @@ echo "  Front-End Client ID: $frontend_client_id"
 
 grant_admin_consent "$FLIGHT_MCP_SERVER_CLIENT_ID" "Flight MCP Server"
 grant_admin_consent "$FOUNDRY_CONNECTION_MCP_CLIENT_ID" "Foundry MCP Flight Server"
-grant_admin_consent "$flight_api_client_id" "Flight Agent API"
+grant_admin_consent "$conversation_api_client_id" "Conversation API"
 grant_admin_consent "$openapi_client_id" "OpenAPI"
 grant_admin_consent "$frontend_client_id" "Front-End Chatbot Trip Reservation"
 

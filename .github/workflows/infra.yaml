@@ -71,13 +71,13 @@ jobs:
                   echo "MCP_HOTEL_WEBAPP_NAME=$(jq -r '.hotel_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_CONTAINER_REGISTRY_NAME=$(jq -r '.azure_container_registry_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "BRING_YOUR_OWN_RESOURCE=$(jq -r '.bring_your_own_resource.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "FLIGHT_AGENT_API_WEBAPP_NAME=$(jq -r '.flight_agent_api_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "CONVERSATION_API_WEBAPP_NAME=$(jq -r '.conversation_api_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "FRONTEND_RESOURCE_NAME=$(jq -r '.frontend_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "FOUNDRY_RESOURCE_NAME=$(jq -r '.foundry_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "PROJECT_NAME=$(jq -r '.project_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_OPENAI_MODEL=$(jq -r '.azure_openai_model.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "APPLICATION_INSIGHT_RESOURCE_NAME=$(jq -r '.application_insight_resource_name.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "FLIGHT_AGENT_API_CLIENT_ID=$(jq -r '.flight_agent_api_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "CONVERSATION_API_CLIENT_ID=$(jq -r '.conversation_api_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "OPENAPI_CLIENT_ID=$(jq -r '.openapi_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
 
             - name: Set secrets using gh CLI
@@ -93,13 +93,13 @@ jobs:
                   gh secret set MCP_HOTEL_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_HOTEL_WEBAPP_NAME }}"
                   gh secret set AZURE_CONTAINER_REGISTRY_NAME --body "${{ steps.createResources.outputs.AZURE_CONTAINER_REGISTRY_NAME }}"
                   gh secret set BRING_YOUR_OWN_RESOURCE --body "${{ steps.createResources.outputs.BRING_YOUR_OWN_RESOURCE }}"
-                  gh secret set FLIGHT_AGENT_API_WEBAPP_NAME --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_WEBAPP_NAME }}"
+                  gh secret set CONVERSATION_API_WEBAPP_NAME --body "${{ steps.createResources.outputs.CONVERSATION_API_WEBAPP_NAME }}"
                   gh secret set FRONTEND_RESOURCE_NAME --body "${{ steps.createResources.outputs.FRONTEND_RESOURCE_NAME }}"
                   gh secret set FOUNDRY_RESOURCE_NAME --body "${{ steps.createResources.outputs.FOUNDRY_RESOURCE_NAME }}"
                   gh secret set PROJECT_NAME --body "${{ steps.createResources.outputs.PROJECT_NAME }}"
                   gh secret set AZURE_OPENAI_MODEL --body "${{ steps.createResources.outputs.AZURE_OPENAI_MODEL }}"
                   gh secret set APPLICATION_INSIGHT_RESOURCE_NAME --body "${{ steps.createResources.outputs.APPLICATION_INSIGHT_RESOURCE_NAME }}"
-                  gh secret set FLIGHT_AGENT_API_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_AGENT_API_CLIENT_ID }}"
+                  gh secret set CONVERSATION_API_CLIENT_ID --body "${{ steps.createResources.outputs.CONVERSATION_API_CLIENT_ID }}"
                   gh secret set OPENAPI_CLIENT_ID --body "${{ steps.createResources.outputs.OPENAPI_CLIENT_ID }}"
 
     # -----------------------------------------------------------------
@@ -130,13 +130,13 @@ jobs:
     #
     #               FLIGHT_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Flight MCP Server" --query "[0].appId" -o tsv)
     #               HOTEL_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Hotel MCP Server" --query "[0].appId" -o tsv)
-    #               FLIGHT_AGENT_API_CLIENT_ID=$(az ad app list --display-name "Flight Agent API" --query "[0].appId" -o tsv)
+    #               CONVERSATION_API_CLIENT_ID=$(az ad app list --display-name "Conversation API" --query "[0].appId" -o tsv)
     #               FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(az ad app list --display-name "Foundry MCP Flight Server" --query "[0].appId" -o tsv)
     #               OPENAPI_CLIENT_ID=$(az ad app list --display-name "OpenAPI" --query "[0].appId" -o tsv)
     #
     #               echo "FLIGHT_MCP_SERVER_CLIENT_ID=$FLIGHT_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
     #               echo "HOTEL_MCP_SERVER_CLIENT_ID=$HOTEL_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
-    #               echo "FLIGHT_AGENT_API_CLIENT_ID=$FLIGHT_AGENT_API_CLIENT_ID" >> $GITHUB_OUTPUT
+    #               echo "CONVERSATION_API_CLIENT_ID=$CONVERSATION_API_CLIENT_ID" >> $GITHUB_OUTPUT
     #               echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$FOUNDRY_CONNECTION_MCP_CLIENT_ID" >> $GITHUB_OUTPUT
     #               echo "OPENAPI_CLIENT_ID=$OPENAPI_CLIENT_ID" >> $GITHUB_OUTPUT
     #
@@ -146,7 +146,7 @@ jobs:
     #           run: |
     #               gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
     #               gh secret set HOTEL_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.HOTEL_MCP_SERVER_CLIENT_ID }}"
-    #               gh secret set FLIGHT_AGENT_API_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FLIGHT_AGENT_API_CLIENT_ID }}"
+    #               gh secret set CONVERSATION_API_CLIENT_ID --body "${{ steps.appRegistrations.outputs.CONVERSATION_API_CLIENT_ID }}"
     #               gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
     #               gh secret set OPENAPI_CLIENT_ID --body "${{ steps.appRegistrations.outputs.OPENAPI_CLIENT_ID }}"
 
