@@ -28,7 +28,7 @@ def main():
 
     # Get bearer token
     credential = AzureCliCredential()
-    token = credential.get_token("https://ai.azure.com/.default").token
+    token = credential.get_token("https://cognitiveservices.azure.com/.default").token
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
