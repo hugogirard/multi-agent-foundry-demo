@@ -86,7 +86,7 @@ jobs:
       - name: Generate App Secret
         id: generate-secret
         run: |
-          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
+          APP_OBJECT_ID=$(az ad app show --id ${{ secrets.HOTEL_MCP_SERVER_CLIENT_ID }} --query id -o tsv)
           for attempt in 1 2 3; do
             SECRET=$(az rest --method POST \
             --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID/addPassword" \
@@ -102,10 +102,10 @@ jobs:
       - name: Set App Settings
         uses: Azure/appservice-settings@v1
         with:
-          app-name: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+          app-name: ${{ secrets.MCP_HOTEL_WEBAPP_NAME }}
           app-settings-json: |
             [
-              { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}" },
+              { "name": "ENTRA_CLIENT_ID", "value": "${{ secrets.HOTEL_MCP_SERVER_CLIENT_ID }}" },
               { "name": "ENTRA_CLIENT_SECRET", "value": "${{ steps.generate-secret.outputs.CLIENT_SECRET }}" }
             ]
 
