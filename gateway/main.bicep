@@ -71,7 +71,7 @@ var requiredResourceAccess = [
   }
 ]
 
-module AiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' = {
+module aiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' = {
   params: {
     appDisplayName: 'AI Gateway Dev Portal'
     appUniqueName: aidevportal.name
@@ -86,3 +86,4 @@ module AiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' =
 
 output apimResourceName string = apim.name
 output aiDevPortalResourceName string = aidevportal.name
+output aiDevPortalAppRegistrationId string = aiDevPortalAppRegistration.outputs.applicationId
