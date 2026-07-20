@@ -41,3 +41,44 @@ resource apim 'Microsoft.ApiManagement/service@2025-09-01-preview' = {
     publisherName: publisherName
   }
 }
+
+resource aidevportal 'Microsoft.Web/staticSites@2021-02-01' = {
+  name: '${abbrs.webStaticSites}${resourceToken}'
+  location: location
+  sku: {
+    name: 'Free'
+    tier: 'Free'
+  }
+  properties: {}
+}
+
+/* We need to create a new app registration needed for the login of the AI Dev Portal */
+var requiredResourceAccess = [
+  {
+    // MS Graph well-known application ID
+    resourceAppId: '797f4846-ba00-4fd7-ba43-dac1f8f63013'
+    resourceAccess: [
+      {
+        // Well-known permission ID for User.Read delegated scope
+        id: '41094075-9dad-400e-a0bd-54e686782033'
+        type: 'Scope' // Delegated permission
+      }
+    ]
+  }
+]
+
+module AiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' = {
+  params: {
+    appDisplayName: 'AI Gateway Dev Portal'
+    appUniqueName: aidevportal.name
+    webRedirectUris: [
+      'https://${aidevportal.name}.azurewebsites.net'
+      'http://localhost:5173'
+    ]
+    oauth2PermissionScopes: []
+    requiredResourcceAccess: requiredResourceAccess
+  }
+}
+
+output apimResourceName string = apim.name
+output aiDevPortalResourceName string = aidevportal.name
