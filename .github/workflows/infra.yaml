@@ -105,54 +105,6 @@ jobs:
                   gh secret set OPENAPI_CLIENT_ID --body "${{ steps.createResources.outputs.OPENAPI_CLIENT_ID }}"
 
     # -----------------------------------------------------------------
-    # Post-provision: create Entra app registrations via az CLI (ALTERNATIVE)
-    # -----------------------------------------------------------------
-    # Workaround for https://github.com/microsoftgraph/msgraph-bicep-types/issues/299
-    # Uncomment this job and comment out the Graph modules in main.bicep if the
-    # extension bug resurfaces.
-    # -----------------------------------------------------------------
-    # create-app-registrations:
-    #     needs: create-azure-resources
-    #     if: inputs.job_to_run == 'all' || inputs.job_to_run == 'create-azure-resources'
-    #     runs-on: ubuntu-latest
-    #
-    #     steps:
-    #         - uses: actions/checkout@v6
-    #
-    #         - name: Azure Login
-    #           uses: Azure/login@v3.0.0
-    #           with:
-    #               creds: ${{ secrets.AZURE_CREDENTIALS }}
-    #
-    #         - name: Create App Registrations
-    #           id: appRegistrations
-    #           run: |
-    #               chmod +x ./scripts/create-app-registrations.sh
-    #               ./scripts/create-app-registrations.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
-    #
-    #               FLIGHT_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Flight MCP Server" --query "[0].appId" -o tsv)
-    #               HOTEL_MCP_SERVER_CLIENT_ID=$(az ad app list --display-name "Hotel MCP Server" --query "[0].appId" -o tsv)
-    #               CONVERSATION_API_CLIENT_ID=$(az ad app list --display-name "Conversation API" --query "[0].appId" -o tsv)
-    #               FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(az ad app list --display-name "Foundry MCP Flight Server" --query "[0].appId" -o tsv)
-    #               OPENAPI_CLIENT_ID=$(az ad app list --display-name "OpenAPI" --query "[0].appId" -o tsv)
-    #
-    #               echo "FLIGHT_MCP_SERVER_CLIENT_ID=$FLIGHT_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
-    #               echo "HOTEL_MCP_SERVER_CLIENT_ID=$HOTEL_MCP_SERVER_CLIENT_ID" >> $GITHUB_OUTPUT
-    #               echo "CONVERSATION_API_CLIENT_ID=$CONVERSATION_API_CLIENT_ID" >> $GITHUB_OUTPUT
-    #               echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$FOUNDRY_CONNECTION_MCP_CLIENT_ID" >> $GITHUB_OUTPUT
-    #               echo "OPENAPI_CLIENT_ID=$OPENAPI_CLIENT_ID" >> $GITHUB_OUTPUT
-    #
-    #         - name: Set app registration secrets
-    #           env:
-    #               GH_TOKEN: ${{ secrets.PA_TOKEN }}
-    #           run: |
-    #               gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
-    #               gh secret set HOTEL_MCP_SERVER_CLIENT_ID --body "${{ steps.appRegistrations.outputs.HOTEL_MCP_SERVER_CLIENT_ID }}"
-    #               gh secret set CONVERSATION_API_CLIENT_ID --body "${{ steps.appRegistrations.outputs.CONVERSATION_API_CLIENT_ID }}"
-    #               gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.appRegistrations.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
-    #               gh secret set OPENAPI_CLIENT_ID --body "${{ steps.appRegistrations.outputs.OPENAPI_CLIENT_ID }}"
-
-    # -----------------------------------------------------------------
     # Post-provision: wire up the Foundry MCP connection
     # -----------------------------------------------------------------
     # Bicep creates the connection resource, but three things can only

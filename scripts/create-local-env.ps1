@@ -81,7 +81,7 @@ Write-Host "  Foundry Endpoint: $foundryEndpoint"
 
 # App Insights
 Write-Host "`nDiscovering App Insights..."
-$appInsightName = az monitor app-insights component list -g $ResourceGroup --query "[0].name" -o tsv
+$appInsightName = az resource list -g $ResourceGroup --resource-type "Microsoft.Insights/components" --query "[0].name" -o tsv
 Write-Host "  App Insights: $appInsightName"
 
 # --- Phase 2: Look up App Registrations ---
@@ -112,6 +112,15 @@ if (-not $openApiClientId) {
     exit 1
 }
 Write-Host "  OpenAPI Client ID: $openApiClientId"
+
+# Front-End Chatbot Trip Reservation
+Write-Host "Looking up Front-End Chatbot Trip Reservation app registration..."
+$frontendClientId = az ad app list --display-name "Front-End Chatbot Trip Reservation" --query "[0].appId" -o tsv
+if (-not $frontendClientId) {
+    Write-Error "Could not find 'Front-End Chatbot Trip Reservation' app registration."
+    exit 1
+}
+Write-Host "  Front-End Client ID: $frontendClientId"
 
 # Hotel MCP Server (optional — may not exist yet)
 Write-Host "Looking up Hotel MCP Server app registration..."
@@ -305,10 +314,11 @@ Write-Host "Writing src/frontend/src/app/environments/environment.ts..."
 # Retrieve App Insights connection string
 $appInsightConnectionString = ""
 if ($appInsightName) {
-    $appInsightConnectionString = az monitor app-insights component show `
-        --app $appInsightName `
-        --resource-group $ResourceGroup `
-        --query "connectionString" -o tsv
+    $appInsightConnectionString = az resource show `
+        -g $ResourceGroup `
+        --resource-type "Microsoft.Insights/components" `
+        -n $appInsightName `
+        --query "properties.ConnectionString" -o tsv
 
     if (-not $appInsightConnectionString) {
         Write-Host "  Could not retrieve App Insights connection string, leaving empty." -ForegroundColor Yellow
@@ -319,7 +329,7 @@ if ($appInsightName) {
 $envTsContent = @"
 export const environment = {
     production: false,
-    clientId: '$conversationApiClientId',
+    clientId: '$frontendClientId',
     authority: 'https://login.microsoftonline.com/$tenantId',
     apiScopes: ['$scopeUri'],
     apiBaseUrl: 'http://localhost:8000',
