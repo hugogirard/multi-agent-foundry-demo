@@ -72,4 +72,4 @@ jobs:
                     --query properties.apiKey -o tsv)
                   npx @azure/static-web-apps-cli deploy ./dist \
                     --deployment-token $SWA_TOKEN \
-                    --env default
+                    --env Production
