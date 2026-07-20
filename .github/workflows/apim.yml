@@ -1,0 +1,27 @@
+name: Deploy and configure AI Gateway
+
+on:
+    workflow_dispatch:
+
+jobs:
+    deploy-ai-gateway:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Azure Login
+              uses: Azure/login@v3.0.0
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: deploy
+              id: createResources
+              run: |
+                  az deployment group create \
+                    --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                    --name ${{ github.run_id }} \
+                    --template-file ./gateway/main.bicep \
+                    --parameters ./gateway/main.bicepparam \
+                    --query 'properties.outputs' \
+                    --output json > outputs.json
