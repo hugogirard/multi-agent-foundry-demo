@@ -3,6 +3,10 @@ targetScope = 'resourceGroup'
 @description('The location where the AI Gateway will be created')
 param location string
 
+@description('The static web app location')
+@allowed(['westeurope', 'centralus', 'eastus2', 'westus2', 'eastasia'])
+param locationStaticWebApp string
+
 @minLength(1)
 @maxLength(64)
 @description('Name of the the environment which is used to generate a short unique hash used in all resources.')
@@ -44,7 +48,7 @@ resource apim 'Microsoft.ApiManagement/service@2025-09-01-preview' = {
 
 resource aidevportal 'Microsoft.Web/staticSites@2021-02-01' = {
   name: '${abbrs.webStaticSites}${resourceToken}'
-  location: location
+  location: locationStaticWebApp
   sku: {
     name: 'Free'
     tier: 'Free'
