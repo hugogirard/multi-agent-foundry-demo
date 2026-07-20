@@ -75,7 +75,7 @@ module aiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' =
   params: {
     appDisplayName: 'AI Gateway Dev Portal'
     appUniqueName: aidevportal.name
-    webRedirectUris: [
+    spaRedirectUris: [
       'https://${aidevportal.name}.azurewebsites.net'
       'http://localhost:5173'
     ]
