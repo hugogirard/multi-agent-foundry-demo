@@ -72,7 +72,7 @@ async def get_user_info() -> dict:
 
 #mcp.include_router(reservation_mcp)
 
-app = mcp.http_app()
+app = mcp.http_app(stateless_http=True)
 
 # app = Starlette(routes=[
 #     Mount('/mcp', app=mcp.http_app(transport='http')),

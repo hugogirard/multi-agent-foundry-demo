@@ -48,7 +48,7 @@ mcp = FastMCP("Hotel MCP Server",
               providers=providers,
               auth=auth_provider)
 
-app = mcp.http_app()
+app = mcp.http_app(stateless_http=True)
 
 if __name__ == "__main__":    
     mcp.run(transport='http',port=9001)
