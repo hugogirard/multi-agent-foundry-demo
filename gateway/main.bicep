@@ -21,6 +21,8 @@ param publisherName string
 @allowed(['BasicV2', 'Developer'])
 param sku string
 
+//param mcpHotelAppResourceName string 
+
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
 var abbrs = loadJsonContent('./abbreviations.json')
@@ -76,11 +78,70 @@ module aiDevPortalAppRegistration '../infra/core/entra/app.registration.bicep' =
     appDisplayName: 'AI Gateway Dev Portal'
     appUniqueName: aidevportal.name
     spaRedirectUris: [
-      'https://${aidevportal.name}.azurewebsites.net'
+      'https://${aidevportal.properties.defaultHostname}'
       'http://localhost:5173'
     ]
     oauth2PermissionScopes: []
     requiredResourcceAccess: requiredResourceAccess
+  }
+}
+
+/* Products */
+resource contosoProductAirlines 'Microsoft.ApiManagement/service/products@2025-09-01-preview' = {
+  parent: apim
+  name: 'contoso-airline'
+  properties: {
+    displayName: 'Contoso Airline'
+    description: 'All the Contoso Airlines MCP and APIS'
+    subscriptionRequired: true
+    approvalRequired: true
+    subscriptionsLimit: 1
+    state: 'published'
+    authenticationType: [
+      'subscription-key'
+    ]
+  }
+}
+
+/* MCP Servers */
+resource service_apim_uhnnd7dfmbpcs_name_contoso_hotel_mcp_backend_939fa6c7_9374_6f56_7c2f_1412ab97d9d3 'Microsoft.ApiManagement/service/backends@2025-09-01-preview' = {
+  parent: apim
+  name: 'contoso-hotel-mcp-backend'
+  properties: {
+    url: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net'
+    protocol: 'http'
+  }
+}
+
+resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
+  parent: apim
+  name: 'contoso-hotel-mcp'
+  properties: {
+    displayName: 'Contoso Hotel MCP'
+    apiRevision: '1'
+    description: 'Contoso Hotel MCP Server for booking'
+    subscriptionRequired: true
+    path: 'cnhtl'
+    protocols: [
+      'https'
+    ]
+    // mcpProperties: {
+    //   endpoints: {
+    //     mcp: {
+    //       uriTemplate: '/mcp'
+    //     }
+    //   }
+    // }
+    authenticationSettings: {
+      oAuth2AuthenticationSettings: []
+      openidAuthenticationSettings: []
+    }
+    subscriptionKeyParameterNames: {
+      header: 'Ocp-Apim-Subscription-Key'
+      query: 'subscription-key'
+    }
+    type: 'mcp'
+    isCurrent: true
   }
 }
 
