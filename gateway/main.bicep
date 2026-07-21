@@ -125,6 +125,7 @@ resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-previe
     protocols: [
       'https'
     ]
+    serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
     // mcpProperties: {
     //   endpoints: {
     //     mcp: {
