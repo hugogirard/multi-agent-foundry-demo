@@ -128,12 +128,12 @@ resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-previe
     serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
     mcpProperties: {
       transportType: 'streamable'
-      endpoints: [
-        {
-          name: 'message'
+      #disable-next-line BCP036
+      endpoints: {
+        message: {
           uriTemplate: '/mcp'
         }
-      ]
+      }
     }
     subscriptionKeyParameterNames: {
       header: 'Ocp-Apim-Subscription-Key'
