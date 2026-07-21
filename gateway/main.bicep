@@ -104,14 +104,14 @@ resource contosoProductAirlines 'Microsoft.ApiManagement/service/products@2025-0
 }
 
 /* MCP Servers */
-resource service_apim_uhnnd7dfmbpcs_name_contoso_hotel_mcp_backend_939fa6c7_9374_6f56_7c2f_1412ab97d9d3 'Microsoft.ApiManagement/service/backends@2025-09-01-preview' = {
-  parent: apim
-  name: 'contoso-hotel-mcp-backend'
-  properties: {
-    url: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net'
-    protocol: 'http'
-  }
-}
+// resource service_apim_uhnnd7dfmbpcs_name_contoso_hotel_mcp_backend_939fa6c7_9374_6f56_7c2f_1412ab97d9d3 'Microsoft.ApiManagement/service/backends@2025-09-01-preview' = {
+//   parent: apim
+//   name: 'contoso-hotel-mcp-backend'
+//   properties: {
+//     url: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net'
+//     protocol: 'http'
+//   }
+// }
 
 resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
   parent: apim
@@ -126,16 +126,14 @@ resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-previe
       'https'
     ]
     serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
-    // mcpProperties: {
-    //   endpoints: {
-    //     mcp: {
-    //       uriTemplate: '/mcp'
-    //     }
-    //   }
-    // }
-    authenticationSettings: {
-      oAuth2AuthenticationSettings: []
-      openidAuthenticationSettings: []
+    mcpProperties: {
+      transportType: 'streamable'
+      endpoints: [
+        {
+          name: 'message'
+          uriTemplate: '/mcp'
+        }
+      ]
     }
     subscriptionKeyParameterNames: {
       header: 'Ocp-Apim-Subscription-Key'
