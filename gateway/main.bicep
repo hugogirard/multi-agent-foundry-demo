@@ -103,7 +103,14 @@ resource contosoProductAirlines 'Microsoft.ApiManagement/service/products@2025-0
   }
 }
 
-/* MCP Servers */
+/*
+ * MCP Servers
+ * -----------
+ * MCP server registration is now handled by scripts/register-mcp-server.sh
+ * using the APIM REST API (az rest). The JSON payload lives in gateway/mcp/hotel/hotel.mcp.json.
+ * See: https://learn.microsoft.com/en-us/azure/api-management/manage-mcp-servers-rest-api
+ */
+
 // resource service_apim_uhnnd7dfmbpcs_name_contoso_hotel_mcp_backend_939fa6c7_9374_6f56_7c2f_1412ab97d9d3 'Microsoft.ApiManagement/service/backends@2025-09-01-preview' = {
 //   parent: apim
 //   name: 'contoso-hotel-mcp-backend'
@@ -113,36 +120,36 @@ resource contosoProductAirlines 'Microsoft.ApiManagement/service/products@2025-0
 //   }
 // }
 
-resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
-  parent: apim
-  name: 'contoso-hotel-mcp'
-  properties: {
-    displayName: 'Contoso Hotel MCP'
-    apiRevision: '1'
-    description: 'Contoso Hotel MCP Server for booking'
-    subscriptionRequired: true
-    path: 'cnhtl'
-    protocols: [
-      'https'
-    ]
-    serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
-    mcpProperties: {
-      transportType: 'streamable'
-      #disable-next-line BCP036
-      endpoints: {
-        message: {
-          uriTemplate: '/mcp'
-        }
-      }
-    }
-    subscriptionKeyParameterNames: {
-      header: 'Ocp-Apim-Subscription-Key'
-      query: 'subscription-key'
-    }
-    type: 'mcp'
-    isCurrent: true
-  }
-}
+// resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
+//   parent: apim
+//   name: 'contoso-hotel-mcp'
+//   properties: {
+//     displayName: 'Contoso Hotel MCP'
+//     apiRevision: '1'
+//     description: 'Contoso Hotel MCP Server for booking'
+//     subscriptionRequired: true
+//     path: 'cnhtl'
+//     protocols: [
+//       'https'
+//     ]
+//     serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
+//     mcpProperties: {
+//       transportType: 'streamable'
+//       #disable-next-line BCP036
+//       endpoints: {
+//         message: {
+//           uriTemplate: '/mcp'
+//         }
+//       }
+//     }
+//     subscriptionKeyParameterNames: {
+//       header: 'Ocp-Apim-Subscription-Key'
+//       query: 'subscription-key'
+//     }
+//     type: 'mcp'
+//     isCurrent: true
+//   }
+// }
 
 output apimResourceName string = apim.name
 output aiDevPortalResourceName string = aidevportal.name

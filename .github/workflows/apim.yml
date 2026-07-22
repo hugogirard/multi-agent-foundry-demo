@@ -1,75 +1,90 @@
 name: Deploy and configure AI Gateway
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-    create-ai-gateway:
-        runs-on: ubuntu-latest
+  create-ai-gateway:
+    runs-on: ubuntu-latest
 
-        outputs:
-            swaName: ${{ steps.parseOutputs.outputs.swaName }}
-            clientId: ${{ steps.parseOutputs.outputs.clientId }}
+    outputs:
+      swaName: ${{ steps.parseOutputs.outputs.swaName }}
+      clientId: ${{ steps.parseOutputs.outputs.clientId }}
 
-        steps:
-            - uses: actions/checkout@v6
+    steps:
+      - uses: actions/checkout@v6
 
-            - name: Azure Login
-              uses: Azure/login@v3.0.0
-              with:
-                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-            - name: deploy
-              id: createResources
-              run: |
-                  az deployment group create \
-                    --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-                    --name ${{ github.run_id }} \
-                    --template-file ./gateway/main.bicep \
-                    --parameters ./gateway/main.bicepparam \
-                    --query 'properties.outputs' \
-                    --output json > outputs.json
+      - name: deploy
+        id: createResources
+        run: |
+          az deployment group create \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ github.run_id }} \
+            --template-file ./gateway/main.bicep \
+            --parameters ./gateway/main.bicepparam \
+            --query 'properties.outputs' \
+            --output json > outputs.json
 
-            - name: Parse deployment outputs
-              id: parseOutputs
-              run: |
-                  echo "swaName=$(jq -r '.aiDevPortalResourceName.value' outputs.json)" >> $GITHUB_OUTPUT
-                  echo "clientId=$(jq -r '.aiDevPortalAppRegistrationId.value' outputs.json)" >> $GITHUB_OUTPUT
+      - name: Parse deployment outputs
+        id: parseOutputs
+        run: |
+          echo "swaName=$(jq -r '.aiDevPortalResourceName.value' outputs.json)" >> $GITHUB_OUTPUT
+          echo "clientId=$(jq -r '.aiDevPortalAppRegistrationId.value' outputs.json)" >> $GITHUB_OUTPUT
 
-    deploy-ai-dev-portal:
-        needs: create-ai-gateway
+  register-mcp-servers:
+    runs-on: ubuntu-latest
+    needs: create-ai-gateway
 
-        runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-        steps:
-            - uses: actions/checkout@v6
-              with:
-                  repository: hugogirard/ai-gateway-dev-portal
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "20"
+      - name: Register MCP Hotel Server
+        run: bash scripts/register-mcp-server.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
 
-            - name: Install dependencies
-              run: npm install
+  deploy-ai-dev-portal:
+    needs: [create-ai-gateway, register-mcp-servers]
 
-            - name: Build
-              run: npm run build
-              env:
-                  VITE_AZURE_CLIENT_ID: ${{ needs.create-ai-gateway.outputs.clientId }}
+    runs-on: ubuntu-latest
 
-            - name: Azure Login
-              uses: Azure/login@v3.0.0
-              with:
-                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: hugogirard/ai-gateway-dev-portal
 
-            - name: Deploy to Static Web App
-              run: |
-                  SWA_TOKEN=$(az staticwebapp secrets list \
-                    --name ${{ needs.create-ai-gateway.outputs.swaName }} \
-                    --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-                    --query properties.apiKey -o tsv)
-                  npx @azure/static-web-apps-cli deploy ./dist \
-                    --deployment-token $SWA_TOKEN \
-                    --env Production
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_AZURE_CLIENT_ID: ${{ needs.create-ai-gateway.outputs.clientId }}
+
+      - name: Azure Login
+        uses: Azure/login@v3.0.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Static Web App
+        run: |
+          SWA_TOKEN=$(az staticwebapp secrets list \
+            --name ${{ needs.create-ai-gateway.outputs.swaName }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --query properties.apiKey -o tsv)
+          npx @azure/static-web-apps-cli deploy ./dist \
+            --deployment-token $SWA_TOKEN \
+            --env Production

@@ -1,0 +1,28 @@
+{
+    "properties": {
+        "type": "mcp",
+        "displayName": "Contoso Hotel MCP",
+        "apiRevision": "1",
+        "description": "Contoso Hotel MCP Server for booking",
+        "subscriptionRequired": true,
+        "path": "cnhtl",
+        "protocols": [
+            "https"
+        ],
+        "serviceUrl": "__BACKEND_URL__",
+        "mcpProperties": {
+            "transportType": "streamable",
+            "endpoints": [
+                {
+                    "name": "message",
+                    "uriTemplate": "/mcp"
+                }
+            ]
+        },
+        "subscriptionKeyParameterNames": {
+            "header": "Ocp-Apim-Subscription-Key",
+            "query": "subscription-key"
+        },
+        "isCurrent": true
+    }
+}
