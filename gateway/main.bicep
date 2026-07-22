@@ -120,36 +120,36 @@ resource contosoProductAirlines 'Microsoft.ApiManagement/service/products@2025-0
 //   }
 // }
 
-// resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
-//   parent: apim
-//   name: 'contoso-hotel-mcp'
-//   properties: {
-//     displayName: 'Contoso Hotel MCP'
-//     apiRevision: '1'
-//     description: 'Contoso Hotel MCP Server for booking'
-//     subscriptionRequired: true
-//     path: 'cnhtl'
-//     protocols: [
-//       'https'
-//     ]
-//     serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
-//     mcpProperties: {
-//       transportType: 'streamable'
-//       #disable-next-line BCP036
-//       endpoints: {
-//         message: {
-//           uriTemplate: '/mcp'
-//         }
-//       }
-//     }
-//     subscriptionKeyParameterNames: {
-//       header: 'Ocp-Apim-Subscription-Key'
-//       query: 'subscription-key'
-//     }
-//     type: 'mcp'
-//     isCurrent: true
-//   }
-// }
+resource contosoHotelMcp 'Microsoft.ApiManagement/service/apis@2025-09-01-preview' = {
+  parent: apim
+  name: 'contoso-hotel-mcp'
+  properties: {
+    displayName: 'Contoso Hotel MCP'
+    apiRevision: '1'
+    description: 'Contoso Hotel MCP Server for booking'
+    subscriptionRequired: true
+    path: 'cnhtl'
+    protocols: [
+      'https'
+    ]
+    serviceUrl: 'https://app-mcp-hotel-server-uhnnd7dfmbpcs.azurewebsites.net/mcp'
+    mcpProperties: {
+      transportType: 'streamable'
+      #disable-next-line BCP036
+      endpoints: {
+        message: {
+          uriTemplate: '/mcp'
+        }
+      }
+    }
+    subscriptionKeyParameterNames: {
+      header: 'Ocp-Apim-Subscription-Key'
+      query: 'subscription-key'
+    }
+    type: 'mcp'
+    isCurrent: true
+  }
+}
 
 output apimResourceName string = apim.name
 output aiDevPortalResourceName string = aidevportal.name

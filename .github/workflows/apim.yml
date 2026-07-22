@@ -36,23 +36,23 @@ jobs:
           echo "swaName=$(jq -r '.aiDevPortalResourceName.value' outputs.json)" >> $GITHUB_OUTPUT
           echo "clientId=$(jq -r '.aiDevPortalAppRegistrationId.value' outputs.json)" >> $GITHUB_OUTPUT
 
-  register-mcp-servers:
-    runs-on: ubuntu-latest
-    needs: create-ai-gateway
+  # register-mcp-servers:
+  #   runs-on: ubuntu-latest
+  #   needs: create-ai-gateway
 
-    steps:
-      - uses: actions/checkout@v6
+  #   steps:
+  #     - uses: actions/checkout@v6
 
-      - name: Azure Login
-        uses: Azure/login@v3.0.0
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #     - name: Azure Login
+  #       uses: Azure/login@v3.0.0
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Register MCP Hotel Server
-        run: bash scripts/register-mcp-server.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
+  #     - name: Register MCP Hotel Server
+  #       run: bash scripts/register-mcp-server.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
 
   deploy-ai-dev-portal:
-    needs: [create-ai-gateway, register-mcp-servers]
+    needs: [create-ai-gateway]
 
     runs-on: ubuntu-latest
 
