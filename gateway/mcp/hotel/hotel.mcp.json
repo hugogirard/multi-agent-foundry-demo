@@ -12,12 +12,11 @@
         "serviceUrl": "__BACKEND_URL__",
         "mcpProperties": {
             "transportType": "streamable",
-            "endpoints": [
-                {
-                    "name": "message",
+            "endpoints": {
+                "message": {
                     "uriTemplate": "/mcp"
                 }
-            ]
+            }
         },
         "subscriptionKeyParameterNames": {
             "header": "Ocp-Apim-Subscription-Key",
