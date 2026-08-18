@@ -345,6 +345,20 @@ module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
   }
 }
 
+module capabilityHosts 'core/ai/capability-hosts.bicep' = {
+  scope: rg
+  dependsOn: [
+    foundryRbac
+  ]
+  params: {
+    connectionCosmosName: foundry.outputs.connectionCosmosName
+    connectionSearchName: foundry.outputs.connectionSearchName
+    connectionStorageName: foundry.outputs.connectionStorageName
+    foundryResourceName: foundry.outputs.foundryResourceName
+    projectName: foundry.outputs.projectName
+  }
+}
+
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 output azure_resource_group string = rg.name
 output virtual_network_resource_name string = bringYourOwnResource == true

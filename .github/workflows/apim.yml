@@ -51,40 +51,40 @@ jobs:
   #     - name: Register MCP Hotel Server
   #       run: bash scripts/register-mcp-server.sh ${{ secrets.AZURE_RESOURCE_GROUP }}
 
-  deploy-ai-dev-portal:
-    needs: [create-ai-gateway]
+  # deploy-ai-dev-portal:
+  #   needs: [create-ai-gateway]
 
-    runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          repository: hugogirard/ai-gateway-dev-portal
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #       with:
+  #         repository: hugogirard/ai-gateway-dev-portal
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
 
-      - name: Install dependencies
-        run: npm install
+  #     - name: Install dependencies
+  #       run: npm install
 
-      - name: Build
-        run: npm run build
-        env:
-          VITE_AZURE_CLIENT_ID: ${{ needs.create-ai-gateway.outputs.clientId }}
+  #     - name: Build
+  #       run: npm run build
+  #       env:
+  #         VITE_AZURE_CLIENT_ID: ${{ needs.create-ai-gateway.outputs.clientId }}
 
-      - name: Azure Login
-        uses: Azure/login@v3.0.0
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #     - name: Azure Login
+  #       uses: Azure/login@v3.0.0
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to Static Web App
-        run: |
-          SWA_TOKEN=$(az staticwebapp secrets list \
-            --name ${{ needs.create-ai-gateway.outputs.swaName }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --query properties.apiKey -o tsv)
-          npx @azure/static-web-apps-cli deploy ./dist \
-            --deployment-token $SWA_TOKEN \
-            --env Production
+  #     - name: Deploy to Static Web App
+  #       run: |
+  #         SWA_TOKEN=$(az staticwebapp secrets list \
+  #           --name ${{ needs.create-ai-gateway.outputs.swaName }} \
+  #           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+  #           --query properties.apiKey -o tsv)
+  #         npx @azure/static-web-apps-cli deploy ./dist \
+  #           --deployment-token $SWA_TOKEN \
+  #           --env Production

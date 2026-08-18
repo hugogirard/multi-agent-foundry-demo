@@ -15,6 +15,14 @@ on:
                     # - create-app-registrations
                     - update-mcp-foundry-connection
                     - grant-admin-consent
+            bring_your_own_resource:
+                description: "Bring your own resources (CosmosDB, AISearch, VNET) for Foundry"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
 
 jobs:
     delete-app-registration:
@@ -59,6 +67,7 @@ jobs:
                     --name ${{ github.run_id }} \
                     --template-file ./infra/main.bicep \
                     --parameters ./infra/main.bicepparam \
+                    --parameters bringYourOwnResource=${{ inputs.bring_your_own_resource }} \
                     --query 'properties.outputs' \
                     --output json > outputs.json
 
