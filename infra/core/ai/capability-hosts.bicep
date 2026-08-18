@@ -17,6 +17,7 @@ resource accountCapabilityHost 'Microsoft.CognitiveServices/accounts/capabilityH
   name: 'account-capability-host'
   parent: foundry
   properties: {
+    #disable-next-line BCP037
     capabilityHostKind: 'Agents'
   }
 }
@@ -25,6 +26,7 @@ resource projectCapabilityHost 'Microsoft.CognitiveServices/accounts/projects/ca
   name: 'project-capability-host'
   parent: project
   properties: {
+    #disable-next-line BCP037
     capabilityHostKind: 'Agents'
     vectorStoreConnections: [
       connectionSearchName
