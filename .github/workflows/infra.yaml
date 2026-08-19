@@ -175,7 +175,7 @@ jobs:
                   creds: ${{ secrets.AZURE_CREDENTIALS }}
 
             - name: Wait for Entra ID propagation
-              run: sleep 60
+              run: sleep 180
 
             - name: Grant Admin Consent
               shell: pwsh
