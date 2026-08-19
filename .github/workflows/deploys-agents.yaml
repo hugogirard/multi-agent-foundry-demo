@@ -38,18 +38,19 @@ jobs:
           az role assignment create --assignee "$OBJECT_ID" --role "c883944f-8b7b-4483-af10-35834be79c4a" --scope "$SCOPE" || true
 
       - name: Run agents creation script
-        id: create-agent
+        id: create-agents
         env:
-          # Add your environment variables here
           FOUNDRY_PROJECT_ENDPOINT: "https://${{secrets.FOUNDRY_RESOURCE_NAME}}.services.ai.azure.com/api/projects/${{secrets.PROJECT_NAME}}"
-          MCP_SERVER_URL: "https://${{secrets.MCP_FLIGHT_WEBAPP_NAME}}.azurewebsites.net/mcp"
+          MCP_FLIGHT_SERVER_URL: "https://${{secrets.MCP_FLIGHT_WEBAPP_NAME}}.azurewebsites.net/mcp"
+          MCP_HOTEL_SERVER_URL: "https://${{secrets.MCP_HOTEL_WEBAPP_NAME}}.azurewebsites.net/mcp"
           AZURE_OPENAI_MODEL: ${{secrets.AZURE_OPENAI_MODEL}}
         run: |
           uv run main.py
         working-directory: agents
 
-      - name: Save agent version to secret
+      - name: Save agent versions to secrets
         env:
           GH_TOKEN: ${{ secrets.PA_TOKEN }}
         run: |
-          gh secret set FLIGHT_AGENT_VERSION --body "${{ steps.create-agent.outputs.agent_version }}"
+          gh secret set FLIGHT_AGENT_VERSION --body "${{ steps.create-agents.outputs.flight_agent_version }}"
+          gh secret set HOTEL_AGENT_VERSION --body "${{ steps.create-agents.outputs.hotel_agent_version }}"

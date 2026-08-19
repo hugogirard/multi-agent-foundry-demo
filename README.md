@@ -11,7 +11,8 @@ A multi-agent travel planner built on Microsoft Foundry with MCP tool servers, d
 | 3. Load seed data into Cosmos DB | [Load Data](docs/load-data.md) |
 | 4. Deploy applications | [Deploy Apps](docs/deploy-apps.md) |
 | 5. Deploy Foundry MCP connection | [Deploy Foundry Connection](docs/deploy-foundry-connection.md) |
-| 6. Understand the Foundry architecture | [Foundry & Capability Host Setup](docs/foundry-setup.md) |
+| 6. Deploy Foundry agents | [Deploy Agents](docs/deploy-agents.md) |
+| 7. Understand the Foundry architecture | [Foundry & Capability Host Setup](docs/foundry-setup.md) |
 
 ## Architecture at a Glance
 
