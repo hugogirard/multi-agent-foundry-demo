@@ -345,7 +345,7 @@ module foundryRbac 'core/rbac/foundry.bicep' = if (bringYourOwnResource) {
   }
 }
 
-module capabilityHosts 'core/ai/capability-hosts.bicep' = {
+module capabilityHosts 'core/ai/capability-hosts.bicep' = if (bringYourOwnResource) {
   scope: rg
   dependsOn: [
     foundryRbac
@@ -356,6 +356,26 @@ module capabilityHosts 'core/ai/capability-hosts.bicep' = {
     connectionStorageName: foundry.outputs.connectionStorageName
     foundryResourceName: foundry.outputs.foundryResourceName
     projectName: foundry.outputs.projectName
+  }
+}
+
+module formatProjectWorkspaceId 'core/ai/format-project-workspace-id.bicep' = if (bringYourOwnResource) {
+  scope: rg
+  params: {
+    projectWorkspaceId: foundry.outputs.projectWorkspaceId
+  }
+}
+
+module postCaphostRbac 'core/rbac/post-caphost.bicep' = if (bringYourOwnResource) {
+  scope: rg
+  dependsOn: [
+    capabilityHosts
+  ]
+  params: {
+    projectPrincipalId: foundry.outputs.projectPrincipalId
+    storageAccountName: foundryDependencies!.outputs.storageResourceName
+    cosmosDbAccountName: foundryDependencies!.outputs.cosmosdbResourceName
+    projectWorkspaceId: formatProjectWorkspaceId!.outputs.projectWorkspaceIdGuid
   }
 }
 

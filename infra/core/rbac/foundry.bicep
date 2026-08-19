@@ -39,12 +39,6 @@ resource storage_blob_data_contributor 'Microsoft.Authorization/roleDefinitions@
   scope: subscription()
 }
 
-@description('Built-in Role: [Storage Blob Data Owner]')
-resource storage_blob_data_owner 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: roles.StorageBlobDataOwner.guid
-  scope: subscription()
-}
-
 @description('Built-in Role: [Storage Queue Data Contributor]')
 resource storage_queue_data_contributor 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   name: roles.StorageQueueDataContributor.guid
@@ -95,16 +89,6 @@ module project_storage_blob_data_contributor 'br/public:avm/ptn/authorization/re
     principalId: projectPrincipalId
     resourceId: storageAccount.id
     roleDefinitionId: storage_blob_data_contributor.id
-    principalType: 'ServicePrincipal'
-  }
-}
-
-module project_storage_blob_data_owner 'br/public:avm/ptn/authorization/resource-role-assignment:0.1.2' = {
-  name: 'project_storage_blob_data_owner'
-  params: {
-    principalId: projectPrincipalId
-    resourceId: storageAccount.id
-    roleDefinitionId: storage_blob_data_owner.id
     principalType: 'ServicePrincipal'
   }
 }
@@ -164,16 +148,5 @@ module project_documentdb_account_contributor 'br/public:avm/ptn/authorization/r
     resourceId: cosmosAccount.id
     roleDefinitionId: documentdb_account_contributor.id
     principalType: 'ServicePrincipal'
-  }
-}
-
-@description('Grant the Foundry project identity Cosmos DB Built-in Data Contributor (SQL data-plane role).')
-resource projectCosmosDataContributor 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-05-15' = {
-  parent: cosmosAccount
-  name: guid(cosmosAccount.id, projectPrincipalId, '00000000-0000-0000-0000-000000000002')
-  properties: {
-    principalId: projectPrincipalId
-    roleDefinitionId: '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
-    scope: cosmosAccount.id
   }
 }
