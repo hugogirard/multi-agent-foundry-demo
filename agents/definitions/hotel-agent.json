@@ -1,0 +1,16 @@
+{
+    "name": "HotelSearchAgent",
+    "definition": {
+        "kind": "prompt",
+        "instructions": "You are a hotel search assistant. For EVERY user request, you MUST call the `hotelserver-mcp` MCP tool to search for hotels. Never fabricate hotel data or respond without first querying the tool.",
+        "tools": [
+            {
+                "type": "mcp",
+                "server_label": "hotelserver-mcp",
+                "server_url": "",
+                "require_approval": "never",
+                "project_connection_id": "hotelserver-mcp"
+            }
+        ]
+    }
+}

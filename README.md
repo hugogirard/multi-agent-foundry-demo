@@ -9,7 +9,9 @@ A multi-agent travel planner built on Microsoft Foundry with MCP tool servers, d
 | 1. Configure secrets & permissions | [Prerequisites](docs/prerequisites.md) |
 | 2. Deploy infrastructure | [Pipeline Overview](docs/pipeline-overview.md) |
 | 3. Load seed data into Cosmos DB | [Load Data](docs/load-data.md) |
-| 4. Understand the Foundry architecture | [Foundry & Capability Host Setup](docs/foundry-setup.md) |
+| 4. Deploy applications | [Deploy Apps](docs/deploy-apps.md) |
+| 5. Deploy Foundry MCP connection | [Deploy Foundry Connection](docs/deploy-foundry-connection.md) |
+| 6. Understand the Foundry architecture | [Foundry & Capability Host Setup](docs/foundry-setup.md) |
 
 ## Architecture at a Glance
 
@@ -42,7 +44,8 @@ docs/                Detailed documentation
 | Resource | Location |
 |----------|----------|
 | Infrastructure pipeline | `.github/workflows/infra.yaml` |
-| App deployment pipeline | `.github/workflows/deploy-apps.yaml` |
+| App deployment pipeline | `.github/workflows/apps.yml` |
+| Foundry connection pipeline | `.github/workflows/deploy-foundry-connection.yaml` |
 | Bicep entry point | `infra/main.bicep` |
 | MCP Flight Server | `src/mcp/flight-server/` |
 | MCP Hotel Server | `src/mcp/hotel-server/` |

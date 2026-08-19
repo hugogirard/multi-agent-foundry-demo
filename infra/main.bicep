@@ -158,6 +158,25 @@ module FoundryConnectionMCP 'core/entra/app.registration.bicep' = {
   }
 }
 
+module FoundryConnectionHotelMCP 'core/entra/app.registration.bicep' = {
+  scope: rg
+  params: {
+    appDisplayName: 'Foundry MCP Hotel Server'
+    appUniqueName: 'foundry-mcp-hotel-server-${resourceToken}'
+    requiredResourcceAccess: union(requiredResourceAccess, [
+      {
+        resourceAppId: HotelMcpServerAppRegistration.outputs.applicationId
+        resourceAccess: [
+          {
+            id: guid(webapp.outputs.mcpHotelWebAppName, 'hotel_reservation_information')
+            type: 'Scope'
+          }
+        ]
+      }
+    ])
+  }
+}
+
 module FlightMcpServerAppRegistration 'core/entra/app.registration.bicep' = {
   scope: rg
   params: {
@@ -388,6 +407,7 @@ output cosmos_db_name string = db.outputs.resourceName
 output flight_mcp_server_client_id string = FlightMcpServerAppRegistration.outputs.applicationId
 output hotel_mcp_server_client_id string = HotelMcpServerAppRegistration.outputs.applicationId
 output foundry_connection_mcp_client_id string = FoundryConnectionMCP.outputs.applicationId
+output foundry_connection_hotel_mcp_client_id string = FoundryConnectionHotelMCP.outputs.applicationId
 output mcp_flight_webapp_name string = webapp.outputs.mcpFlightWebAppName
 output hotel_flight_webapp_name string = webapp.outputs.mcpHotelWebAppName
 output azure_container_registry_name string = containerRegistry.outputs.resourceName

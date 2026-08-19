@@ -77,6 +77,7 @@ jobs:
                   echo "FLIGHT_MCP_SERVER_CLIENT_ID=$(jq -r '.flight_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "HOTEL_MCP_SERVER_CLIENT_ID=$(jq -r '.hotel_mcp_server_client_id.value' outputs.json)" >> $GITHUB_OUTPUT                  
                   echo "FOUNDRY_CONNECTION_MCP_CLIENT_ID=$(jq -r '.foundry_connection_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
+                  echo "FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID=$(jq -r '.foundry_connection_hotel_mcp_client_id.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "MCP_FLIGHT_WEBAPP_NAME=$(jq -r '.mcp_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "MCP_HOTEL_WEBAPP_NAME=$(jq -r '.hotel_flight_webapp_name.value' outputs.json)" >> $GITHUB_OUTPUT
                   echo "AZURE_CONTAINER_REGISTRY_NAME=$(jq -r '.azure_container_registry_name.value' outputs.json)" >> $GITHUB_OUTPUT
@@ -100,6 +101,7 @@ jobs:
                   gh secret set FLIGHT_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.FLIGHT_MCP_SERVER_CLIENT_ID }}"
                   gh secret set HOTEL_MCP_SERVER_CLIENT_ID --body "${{ steps.createResources.outputs.HOTEL_MCP_SERVER_CLIENT_ID }}"                  
                   gh secret set FOUNDRY_CONNECTION_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}"
+                  gh secret set FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID --body "${{ steps.createResources.outputs.FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID }}"
                   gh secret set MCP_FLIGHT_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_FLIGHT_WEBAPP_NAME }}"
                   gh secret set MCP_HOTEL_WEBAPP_NAME --body "${{ steps.createResources.outputs.MCP_HOTEL_WEBAPP_NAME }}"
                   gh secret set AZURE_CONTAINER_REGISTRY_NAME --body "${{ steps.createResources.outputs.AZURE_CONTAINER_REGISTRY_NAME }}"
@@ -144,8 +146,10 @@ jobs:
             - name: Update Foundry MCP Connection
               env:
                   FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
+                  FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID }}
                   AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
                   MCP_FLIGHT_WEBAPP_NAME: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+                  MCP_HOTEL_WEBAPP_NAME: ${{ secrets.MCP_HOTEL_WEBAPP_NAME }}
                   FOUNDRY_RESOURCE_NAME: ${{ secrets.FOUNDRY_RESOURCE_NAME }}
                   PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
               run: |
@@ -179,4 +183,5 @@ jobs:
                   FLIGHT_MCP_SERVER_CLIENT_ID: ${{ secrets.FLIGHT_MCP_SERVER_CLIENT_ID }}
                   HOTEL_MCP_SERVER_CLIENT_ID: ${{ secrets.HOTEL_MCP_SERVER_CLIENT_ID }}
                   FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
+                  FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID }}
               run: ./scripts/grant-admin-consent.ps1

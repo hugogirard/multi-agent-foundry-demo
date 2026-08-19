@@ -37,8 +37,10 @@ jobs:
             - name: Deploy Foundry MCP Connection
               env:
                   FOUNDRY_CONNECTION_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_MCP_CLIENT_ID }}
+                  FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID: ${{ secrets.FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID }}
                   AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
                   MCP_FLIGHT_WEBAPP_NAME: ${{ secrets.MCP_FLIGHT_WEBAPP_NAME }}
+                  MCP_HOTEL_WEBAPP_NAME: ${{ secrets.MCP_HOTEL_WEBAPP_NAME }}
                   FOUNDRY_RESOURCE_NAME: ${{ secrets.FOUNDRY_RESOURCE_NAME }}
                   PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
               run: |

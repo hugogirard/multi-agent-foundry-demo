@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App Deployment Pipeline</title>
+    <style>
+        :root {
+            --ig-github: #8b5cf6;
+            --ig-azure: #0078d4;
+            --ig-entra: #16a34a;
+            --ig-foundry: #f97316;
+            --ig-key: #eab308;
+            --ig-cosmos: #06b6d4;
+            --ig-container: #ec4899;
+            --ig-acr: #3b82f6;
+            --ig-neutral: #94a3b8;
+            --ig-surface: rgba(255, 255, 255, 0.06);
+            --ig-border: rgba(255, 255, 255, 0.12);
+            --ig-text: #e0e0e0;
+            --ig-text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #0a0e1a 0%, #1a1f3a 40%, #0f1a2e 70%, #0a0e1a 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 60px;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--ig-text);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Title */
+        .title {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .title .subtitle {
+            font-size: 14px;
+            color: var(--ig-text-muted);
+            margin: 0;
+        }
+
+        /* Layer */
+        .layer {
+            background: var(--ig-surface);
+            border: 1px solid var(--ig-border);
+            border-left: 4px solid var(--accent);
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .layer-label {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+
+        .layer-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .layer-icon svg {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+        }
+
+        .layer-body {
+            flex: 1;
+        }
+
+        .layer-body h3 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .layer-body p {
+            margin: 0 0 12px;
+            font-size: 14px;
+            color: var(--ig-text-muted);
+            line-height: 1.5;
+        }
+
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: var(--ig-text);
+        }
+
+        /* Parallel 2x2 grid */
+        .parallel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .parallel .layer {
+            margin-bottom: 0;
+        }
+
+        /* Arrow */
+        .arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .arrow-line {
+            width: 2px;
+            height: 28px;
+            background: linear-gradient(to bottom, var(--ig-neutral), rgba(148, 163, 184, 0.3));
+            position: relative;
+        }
+
+        .arrow-line::after {
+            content: "";
+            position: absolute;
+            bottom: -6px;
+            left: -4px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--ig-neutral);
+        }
+
+        .arrow-label {
+            font-size: 11px;
+            color: var(--ig-text-muted);
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* Fork arrow (quad) */
+        .arrow-fork {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px 0;
+            position: relative;
+        }
+
+        .arrow-fork-lines {
+            width: 75%;
+            height: 28px;
+            position: relative;
+            border-left: 2px solid var(--ig-neutral);
+            border-right: 2px solid var(--ig-neutral);
+            border-top: 2px solid var(--ig-neutral);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .arrow-fork-lines::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 12px;
+            background: var(--ig-neutral);
+        }
+
+        .arrow-fork-lines::after {
+            content: "";
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 6px solid var(--ig-neutral);
+        }
+
+        .fork-arrow-down {
+            position: absolute;
+            bottom: -6px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--ig-neutral);
+        }
+
+        .fork-left {
+            left: -4px;
+        }
+
+        .fork-right {
+            right: -4px;
+        }
+
+        /* Inner fork mid-points for 4-way split */
+        .fork-mid-left {
+            left: calc(33% - 4px);
+        }
+
+        .fork-mid-right {
+            right: calc(33% - 4px);
+        }
+
+        /* Step list inside a layer */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--ig-text-muted);
+        }
+
+        .step-num {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--ig-text);
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        .footer-bar {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 28px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid var(--ig-border);
+        }
+
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--ig-text);
+            font-weight: 500;
+        }
+
+        .footer-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--dot);
+        }
+
+        /* Workflow badge */
+        .workflow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--ig-github);
+            font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+        }
+
+        code {
+            font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Title -->
+        <div class="title">
+            <h1>App Deployment Pipeline</h1>
+            <p class="subtitle">GitHub Actions workflow — <span class="workflow-badge">apps.yml</span> — builds,
+                pushes, and deploys all containerized applications to Azure App Service</p>
+        </div>
+
+        <!-- Layer 1: Trigger -->
+        <div class="layer" style="--accent: var(--ig-github)">
+            <div class="layer-label">Trigger</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-github)" stroke-width="2" />
+                        <path
+                            d="M24 12C17.4 12 12 17.4 12 24c0 5.3 3.4 9.8 8.2 11.4.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2 1-.3 2-.4 3-.4s2 .1 3 .4c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6C32.6 33.8 36 29.3 36 24c0-6.6-5.4-12-12-12z"
+                            fill="var(--ig-github)" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>workflow_dispatch</h3>
+                    <p>Manual trigger from the Actions tab — select which component(s) to deploy</p>
+                    <div class="pills">
+                        <span class="pill">deploy-target: all | flight-mcp-server | hotel-mcp-server | conversation-api
+                            | frontend</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fork arrow for 4 parallel jobs -->
+        <div class="arrow-fork">
+            <div class="arrow-fork-lines">
+                <div class="fork-arrow-down fork-left"></div>
+                <div class="fork-arrow-down fork-right"></div>
+            </div>
+        </div>
+
+        <!-- Layer 2: Parallel jobs (2x2 grid) -->
+        <div class="parallel">
+            <!-- Flight MCP Server -->
+            <div class="layer" style="--accent: var(--ig-azure)">
+                <div class="layer-label">MCP Server</div>
+                <div class="layer-content">
+                    <div class="layer-icon">
+                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-azure)" stroke-width="2" />
+                            <path d="M16 20h16M16 28h16M14 16h20v16H14z" stroke="var(--ig-azure)" stroke-width="1.5"
+                                fill="none" stroke-linecap="round" />
+                            <path d="M24 14l4 4-4 4M24 26l-4 4 4 4" stroke="var(--ig-azure)" stroke-width="1.5"
+                                fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="layer-body">
+                        <h3>Flight MCP Server</h3>
+                        <p><code style="color:var(--ig-azure)">src/mcp/flight-server</code></p>
+                        <div class="pills">
+                            <span class="pill">Docker build</span>
+                            <span class="pill">ACR push</span>
+                            <span class="pill">App secret</span>
+                            <span class="pill">App Service deploy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hotel MCP Server -->
+            <div class="layer" style="--accent: var(--ig-azure)">
+                <div class="layer-label">MCP Server</div>
+                <div class="layer-content">
+                    <div class="layer-icon">
+                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-azure)" stroke-width="2" />
+                            <path d="M16 32h16M16 18h16v14H16z" stroke="var(--ig-azure)" stroke-width="1.5" fill="none"
+                                stroke-linecap="round" />
+                            <rect x="20" y="22" width="8" height="6" rx="1" stroke="var(--ig-azure)" stroke-width="1.5"
+                                fill="none" />
+                            <path d="M24 15v3" stroke="var(--ig-azure)" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="layer-body">
+                        <h3>Hotel MCP Server</h3>
+                        <p><code style="color:var(--ig-azure)">src/mcp/hotel-server</code></p>
+                        <div class="pills">
+                            <span class="pill">Docker build</span>
+                            <span class="pill">ACR push</span>
+                            <span class="pill">App secret</span>
+                            <span class="pill">App Service deploy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation API -->
+            <div class="layer" style="--accent: var(--ig-foundry)">
+                <div class="layer-label">API</div>
+                <div class="layer-content">
+                    <div class="layer-icon">
+                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-foundry)" stroke-width="2" />
+                            <path d="M18 16l-4 8 4 8M30 16l4 8-4 8" stroke="var(--ig-foundry)" stroke-width="2"
+                                fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M22 32l4-16" stroke="var(--ig-foundry)" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="layer-body">
+                        <h3>Conversation API</h3>
+                        <p><code style="color:var(--ig-foundry)">src/api/conversation-api</code></p>
+                        <div class="pills">
+                            <span class="pill">Docker build</span>
+                            <span class="pill">ACR push</span>
+                            <span class="pill">App secret</span>
+                            <span class="pill">App settings</span>
+                            <span class="pill">App Service deploy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frontend -->
+            <div class="layer" style="--accent: var(--ig-container)">
+                <div class="layer-label">Frontend</div>
+                <div class="layer-content">
+                    <div class="layer-icon">
+                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-container)"
+                                stroke-width="2" />
+                            <rect x="14" y="14" width="20" height="16" rx="2" stroke="var(--ig-container)"
+                                stroke-width="1.5" fill="none" />
+                            <path d="M14 20h20" stroke="var(--ig-container)" stroke-width="1.5" />
+                            <circle cx="17" cy="17" r="1" fill="var(--ig-container)" />
+                            <circle cx="20" cy="17" r="1" fill="var(--ig-container)" />
+                            <circle cx="23" cy="17" r="1" fill="var(--ig-container)" />
+                            <path d="M20 34h8M24 30v4" stroke="var(--ig-container)" stroke-width="1.5"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="layer-body">
+                        <h3>Frontend</h3>
+                        <p><code style="color:var(--ig-container)">src/frontend</code></p>
+                        <div class="pills">
+                            <span class="pill">Token replace</span>
+                            <span class="pill">Docker build</span>
+                            <span class="pill">ACR push</span>
+                            <span class="pill">App Service deploy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shared step detail -->
+        <div class="layer" style="--accent: var(--ig-neutral)">
+            <div class="layer-label">Shared Steps</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-neutral)" stroke-width="2" />
+                        <path d="M16 18h16v12H16z" stroke="var(--ig-neutral)" stroke-width="1.5" fill="none" rx="2" />
+                        <path d="M20 22h8M20 26h5" stroke="var(--ig-neutral)" stroke-width="1.5"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>Each Job Follows the Same Pattern</h3>
+                    <div class="steps">
+                        <div class="step"><span class="step-num">1</span> Azure Login with service principal
+                            credentials</div>
+                        <div class="step"><span class="step-num">2</span> Build Docker image from source directory
+                            &amp; push to Azure Container Registry</div>
+                        <div class="step"><span class="step-num">3</span> Generate Entra ID app secret via Microsoft
+                            Graph API (with retry logic)</div>
+                        <div class="step"><span class="step-num">4</span> Inject app settings (client IDs, secrets,
+                            endpoints) into App Service</div>
+                        <div class="step"><span class="step-num">5</span> Deploy container image to Azure App Service
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            <div class="footer-item" style="--dot: var(--ig-github)">
+                <span class="footer-dot"></span> GitHub Actions
+            </div>
+            <div class="footer-item" style="--dot: var(--ig-acr)">
+                <span class="footer-dot"></span> Container Registry
+            </div>
+            <div class="footer-item" style="--dot: var(--ig-entra)">
+                <span class="footer-dot"></span> Entra ID
+            </div>
+            <div class="footer-item" style="--dot: var(--ig-azure)">
+                <span class="footer-dot"></span> App Service
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

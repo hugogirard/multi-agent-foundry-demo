@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deploy Foundry MCP Connection</title>
+    <style>
+        :root {
+            --ig-github: #8b5cf6;
+            --ig-azure: #0078d4;
+            --ig-entra: #16a34a;
+            --ig-foundry: #f97316;
+            --ig-key: #eab308;
+            --ig-cosmos: #06b6d4;
+            --ig-container: #ec4899;
+            --ig-neutral: #94a3b8;
+            --ig-surface: rgba(255, 255, 255, 0.06);
+            --ig-border: rgba(255, 255, 255, 0.12);
+            --ig-text: #e0e0e0;
+            --ig-text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #0a0e1a 0%, #1a1f3a 40%, #0f1a2e 70%, #0a0e1a 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 60px;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--ig-text);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .title .subtitle {
+            font-size: 14px;
+            color: var(--ig-text-muted);
+            margin: 0;
+        }
+
+        .layer {
+            background: var(--ig-surface);
+            border: 1px solid var(--ig-border);
+            border-left: 4px solid var(--accent);
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .layer-label {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+
+        .layer-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .layer-icon svg {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+        }
+
+        .layer-body {
+            flex: 1;
+        }
+
+        .layer-body h3 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .layer-body p {
+            margin: 0 0 12px;
+            font-size: 14px;
+            color: var(--ig-text-muted);
+            line-height: 1.5;
+        }
+
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: var(--ig-text);
+        }
+
+        .arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .arrow-line {
+            width: 2px;
+            height: 28px;
+            background: linear-gradient(to bottom, var(--ig-neutral), rgba(148, 163, 184, 0.3));
+            position: relative;
+        }
+
+        .arrow-line::after {
+            content: "";
+            position: absolute;
+            bottom: -6px;
+            left: -4px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--ig-neutral);
+        }
+
+        .arrow-label {
+            font-size: 11px;
+            color: var(--ig-text-muted);
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .footer-bar {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 28px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid var(--ig-border);
+        }
+
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--ig-text);
+            font-weight: 500;
+        }
+
+        .footer-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--dot);
+        }
+
+        .workflow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--ig-github);
+            font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+        }
+
+        code {
+            font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+            font-size: 12px;
+        }
+
+        .callout {
+            background: rgba(249, 115, 22, 0.08);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .callout-icon {
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .callout-text {
+            font-size: 13px;
+            color: var(--ig-text-muted);
+            line-height: 1.5;
+        }
+
+        .callout-text strong {
+            color: var(--ig-foundry);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Title -->
+        <div class="title">
+            <h1>Deploy Foundry MCP Connection</h1>
+            <p class="subtitle">GitHub Actions workflow — <span
+                    class="workflow-badge">deploy-foundry-connection.yaml</span> — wires MCP OAuth connections for
+                Flight &amp; Hotel servers at the Foundry project level</p>
+        </div>
+
+        <!-- Layer 1: Trigger -->
+        <div class="layer" style="--accent: var(--ig-github)">
+            <div class="layer-label">Trigger</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-github)" stroke-width="2" />
+                        <path
+                            d="M24 12C17.4 12 12 17.4 12 24c0 5.3 3.4 9.8 8.2 11.4.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2 1-.3 2-.4 3-.4s2 .1 3 .4c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6C32.6 33.8 36 29.3 36 24c0-6.6-5.4-12-12-12z"
+                            fill="var(--ig-github)" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>workflow_dispatch</h3>
+                    <p>Manual trigger from the Actions tab — run after infrastructure and app deployments are complete
+                    </p>
+                    <div class="pills">
+                        <span class="pill">No inputs — reads all values from auto-populated secrets</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow">
+            <div class="arrow-line"></div>
+        </div>
+
+        <!-- Layer 2: Generate Secret -->
+        <div class="layer" style="--accent: var(--ig-key)">
+            <div class="layer-label">Step 1</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-key)" stroke-width="2" />
+                        <circle cx="20" cy="24" r="5" fill="none" stroke="var(--ig-key)" stroke-width="2" />
+                        <path d="M25 24h10m-3-3v6m-4-6v6" stroke="var(--ig-key)" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>Generate Client Secrets</h3>
+                    <p>Create new password credentials on both Foundry MCP app registrations via the Microsoft Graph API
+                        (<code style="color:var(--ig-key)">addPassword</code>)</p>
+                    <div class="pills">
+                        <span class="pill">Graph API: POST /applications/{id}/addPassword</span>
+                        <span class="pill">Masked in CI logs</span>
+                        <span class="pill">× 2 (Flight + Hotel)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow">
+            <div class="arrow-line"></div>
+        </div>
+
+        <!-- Layer 3: Create Connection -->
+        <div class="layer" style="--accent: var(--ig-foundry)">
+            <div class="layer-label">Step 2</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-foundry)" stroke-width="2" />
+                        <path d="M20 14l-4 6h8l-4 6" stroke="var(--ig-foundry)" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M28 22l4 6h-8l4 6" stroke="var(--ig-foundry)" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>Create MCP Connections at Project Level</h3>
+                    <p>Deploy OAuth2 MCP connections via ARM REST API at the Foundry <strong
+                            style="color:#fff">project</strong> scope — this enables agents to discover MCP tools</p>
+                    <div class="pills">
+                        <span class="pill">ARM PUT: /accounts/{name}/projects/{name}/connections</span>
+                        <span class="pill">authType: OAuth2</span>
+                        <span class="pill">category: RemoteTool</span>
+                        <span class="pill">flightserver-mcp</span>
+                        <span class="pill">hotelserver-mcp</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow">
+            <div class="arrow-line"></div>
+        </div>
+
+        <!-- Layer 4: Patch Redirect URI -->
+        <div class="layer" style="--accent: var(--ig-entra)">
+            <div class="layer-label">Step 3</div>
+            <div class="layer-content">
+                <div class="layer-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" fill="#1a1a2e" stroke="var(--ig-entra)" stroke-width="2" />
+                        <path d="M24 14l-8 4v8c0 5.3 3.4 10.2 8 12 4.6-1.8 8-6.7 8-12v-8l-8-4z" fill="none"
+                            stroke="var(--ig-entra)" stroke-width="2" />
+                        <path d="M20 24l3 3 5-5" stroke="var(--ig-entra)" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="layer-body">
+                    <h3>Patch OAuth Redirect URI</h3>
+                    <p>Extract the consent redirect URL from the connection response
+                        (<code style="color:var(--ig-entra)">global.consent.azure-apim.net/redirect/...</code>) and
+                        patch it into the app registration's redirect URIs</p>
+                    <div class="pills">
+                        <span class="pill">Graph API: PATCH /applications/{id}</span>
+                        <span class="pill">Deduplicates URIs</span>
+                        <span class="pill">Removes stale consent URIs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Callout: why this exists -->
+        <div class="callout">
+            <div class="callout-icon">&#x1F414;</div>
+            <div class="callout-text">
+                <strong>Why a script instead of Bicep?</strong> — This is a chicken-and-egg problem: the redirect URL
+                is only known after the connection is created, so it must be patched afterward. Bicep cannot generate
+                secrets via Graph API or deploy connections at the project level.
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            <div class="footer-item" style="--dot: var(--ig-key)">
+                <span class="footer-dot"></span> Client Secret
+            </div>
+            <div class="footer-item" style="--dot: var(--ig-foundry)">
+                <span class="footer-dot"></span> MCP Connection
+            </div>
+            <div class="footer-item" style="--dot: var(--ig-entra)">
+                <span class="footer-dot"></span> Redirect URI
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

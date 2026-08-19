@@ -154,6 +154,12 @@ if [[ -z "${FOUNDRY_CONNECTION_MCP_CLIENT_ID:-}" ]]; then
 fi
 echo "  Foundry MCP Flight Server Client ID: $FOUNDRY_CONNECTION_MCP_CLIENT_ID"
 
+if [[ -z "${FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID:-}" ]]; then
+    echo "ERROR: FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID environment variable is not set."
+    exit 1
+fi
+echo "  Foundry MCP Hotel Server Client ID: $FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID"
+
 # Look up remaining apps by display name
 echo "Looking up Conversation API app registration..."
 conversation_api_client_id=$(get_app_client_id "Conversation API")
@@ -183,6 +189,7 @@ echo "  Front-End Client ID: $frontend_client_id"
 
 grant_admin_consent "$FLIGHT_MCP_SERVER_CLIENT_ID" "Flight MCP Server"
 grant_admin_consent "$FOUNDRY_CONNECTION_MCP_CLIENT_ID" "Foundry MCP Flight Server"
+grant_admin_consent "$FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID" "Foundry MCP Hotel Server"
 grant_admin_consent "$conversation_api_client_id" "Conversation API"
 grant_admin_consent "$openapi_client_id" "OpenAPI"
 grant_admin_consent "$frontend_client_id" "Front-End Chatbot Trip Reservation"

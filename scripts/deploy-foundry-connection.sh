@@ -27,11 +27,13 @@
 #   (GitHub Actions injects env vars from secrets).
 #
 # Required environment variables:
-#   FOUNDRY_CONNECTION_MCP_CLIENT_ID  – App ID of the Entra app for the connection
-#   AZURE_RESOURCE_GROUP              – Resource group containing the Foundry resource
-#   MCP_FLIGHT_WEBAPP_NAME            – Name of the MCP Flight Server App Service
-#   FOUNDRY_RESOURCE_NAME             – Name of the Foundry (Cognitive Services) account
-#   PROJECT_NAME                      – Name of the Foundry project
+#   FOUNDRY_CONNECTION_MCP_CLIENT_ID        – App ID of the Entra app for the Flight connection
+#   FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID  – App ID of the Entra app for the Hotel connection
+#   AZURE_RESOURCE_GROUP                    – Resource group containing the Foundry resource
+#   MCP_FLIGHT_WEBAPP_NAME                  – Name of the MCP Flight Server App Service
+#   MCP_HOTEL_WEBAPP_NAME                   – Name of the MCP Hotel Server App Service
+#   FOUNDRY_RESOURCE_NAME                   – Name of the Foundry (Cognitive Services) account
+#   PROJECT_NAME                            – Name of the Foundry project
 #
 # Optional (auto-detected if not set):
 #   TENANT_ID
@@ -39,11 +41,9 @@
 
 set -euo pipefail
 
-# --- Resolve configuration ---
+# --- Resolve shared configuration ---
 
-clientId="${FOUNDRY_CONNECTION_MCP_CLIENT_ID:?Missing FOUNDRY_CONNECTION_MCP_CLIENT_ID}"
 resourceGroup="${AZURE_RESOURCE_GROUP:?Missing AZURE_RESOURCE_GROUP}"
-webAppName="${MCP_FLIGHT_WEBAPP_NAME:?Missing MCP_FLIGHT_WEBAPP_NAME}"
 foundryResourceName="${FOUNDRY_RESOURCE_NAME:?Missing FOUNDRY_RESOURCE_NAME}"
 projectName="${PROJECT_NAME:?Missing PROJECT_NAME}"
 tenantId="${TENANT_ID:-$(az account show --query tenantId -o tsv)}"
@@ -53,59 +53,72 @@ loginEndpoint=$(az cloud show --query endpoints.activeDirectory -o tsv)
 loginEndpoint="${loginEndpoint%/}"
 tokenUrl="$loginEndpoint/$tenantId/oauth2/v2.0/token"
 authUrl="$loginEndpoint/$tenantId/oauth2/v2.0/authorize"
-scopes="api://$webAppName/flight_reservation_information"
 
-echo "Deploying Foundry MCP connection..."
-echo "  Resource Group: $resourceGroup"
-echo "  Foundry Resource: $foundryResourceName"
-echo "  Project: $projectName"
-echo "  MCP Web App: $webAppName"
-echo "  Client ID: $clientId"
-echo "  Tenant ID: $tenantId"
+# ---------------------------------------------------------------------------
+# deploy_connection <clientId> <webAppName> <connectionName> <scopeName>
+# ---------------------------------------------------------------------------
+deploy_connection() {
+  local clientId="$1"
+  local webAppName="$2"
+  local connectionName="$3"
+  local scopeName="$4"
+  local scopes="api://$webAppName/$scopeName"
 
-# --- Create/regenerate app registration secret for Foundry connection ---
+  echo ""
+  echo "================================================================="
+  echo "Deploying Foundry MCP connection: $connectionName"
+  echo "================================================================="
+  echo "  Resource Group: $resourceGroup"
+  echo "  Foundry Resource: $foundryResourceName"
+  echo "  Project: $projectName"
+  echo "  MCP Web App: $webAppName"
+  echo "  Client ID: $clientId"
+  echo "  Tenant ID: $tenantId"
 
-# Look up the app's object ID from its appId (clientId)
-appObjectId=$(az rest --method GET \
-  --url "https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '$clientId'&\$select=id" \
-  --query "value[0].id" -o tsv)
+  # --- Create/regenerate app registration secret ---
 
-if [ -z "$appObjectId" ]; then
-  echo "ERROR: Could not find app registration with clientId=$clientId" >&2
-  exit 1
-fi
+  local appObjectId
+  appObjectId=$(az rest --method GET \
+    --url "https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '$clientId'&\$select=id" \
+    --query "value[0].id" -o tsv)
 
-echo "Creating new 'Foundry MCP Connection' credential..."
-addBody='{"passwordCredential":{"displayName":"Foundry MCP Connection"}}'
-addTmp=$(mktemp)
-echo "$addBody" > "$addTmp"
+  if [ -z "$appObjectId" ]; then
+    echo "ERROR: Could not find app registration with clientId=$clientId" >&2
+    return 1
+  fi
 
-secretValue=$(az rest --method POST \
-  --url "https://graph.microsoft.com/v1.0/applications/$appObjectId/addPassword" \
-  --body "@$addTmp" \
-  --headers "Content-Type=application/json" \
-  --query "secretText" -o tsv)
+  echo "Creating new 'Foundry MCP Connection' credential..."
+  local addBody='{"passwordCredential":{"displayName":"Foundry MCP Connection"}}'
+  local addTmp
+  addTmp=$(mktemp)
+  echo "$addBody" > "$addTmp"
 
-rm -f "$addTmp"
+  local secretValue
+  secretValue=$(az rest --method POST \
+    --url "https://graph.microsoft.com/v1.0/applications/$appObjectId/addPassword" \
+    --body "@$addTmp" \
+    --headers "Content-Type=application/json" \
+    --query "secretText" -o tsv)
 
-if [ -z "$secretValue" ]; then
-  echo "ERROR: Failed to create app registration secret." >&2
-  exit 1
-fi
+  rm -f "$addTmp"
 
-# Mask secret in GitHub Actions logs
-if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-  echo "::add-mask::$secretValue"
-fi
+  if [ -z "$secretValue" ]; then
+    echo "ERROR: Failed to create app registration secret." >&2
+    return 1
+  fi
 
-echo "Secret created successfully."
+  if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    echo "::add-mask::$secretValue"
+  fi
 
-# --- Create/update connection via REST API at project level ---
+  echo "Secret created successfully."
 
-connectionName="flightserver-mcp"
-connectionUrl="https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.CognitiveServices/accounts/$foundryResourceName/projects/$projectName/connections/${connectionName}?api-version=2025-06-01"
+  # --- Create/update connection at project level ---
 
-body=$(cat <<EOF
+  local connectionUrl="https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.CognitiveServices/accounts/$foundryResourceName/projects/$projectName/connections/${connectionName}?api-version=2025-06-01"
+
+  local body
+  body=$(cat <<EOF
 {
   "type": "Microsoft.CognitiveServices/accounts/projects/connections",
   "name": "$connectionName",
@@ -131,116 +144,134 @@ body=$(cat <<EOF
 EOF
 )
 
-tempFile=$(mktemp)
-echo "$body" > "$tempFile"
+  local tempFile
+  tempFile=$(mktemp)
+  echo "$body" > "$tempFile"
 
-echo "Creating connection via REST API..."
-connectionResponse=$(az rest --method PUT \
-  --url "$connectionUrl" \
-  --body "@$tempFile" \
-  --headers "Content-Type=application/json" \
-  -o json) || { echo "ERROR: Failed to create Foundry MCP connection." >&2; rm -f "$tempFile"; exit 1; }
+  echo "Creating connection via REST API..."
+  local connectionResponse
+  connectionResponse=$(az rest --method PUT \
+    --url "$connectionUrl" \
+    --body "@$tempFile" \
+    --headers "Content-Type=application/json" \
+    -o json) || { echo "ERROR: Failed to create Foundry MCP connection." >&2; rm -f "$tempFile"; return 1; }
 
-rm -f "$tempFile"
+  rm -f "$tempFile"
 
-echo "Foundry MCP connection deployed successfully."
+  echo "Foundry MCP connection '$connectionName' deployed successfully."
 
-# --- Add redirect URL from connection response to app registration ---
+  # --- Patch redirect URI ---
 
-# Try multiple known property paths for the redirect URL
-redirectUrl=$(echo "$connectionResponse" | jq -r '
-  .properties.metadata.redirectUrl //
-  .properties.metadata.RedirectUrl //
-  .properties.metadata.redirect_url //
-  .properties.metadata.RedirectUri //
-  .properties.redirectUrl //
-  empty' 2>/dev/null || true)
-
-if [ -z "$redirectUrl" ]; then
-  echo "No redirectUrl found in PUT response. Fetching connection via GET..."
-  getResponse=$(az rest --method GET --url "$connectionUrl" -o json)
-
-  # Show metadata keys for debugging
-  echo "  Connection metadata keys: $(echo "$getResponse" | jq -r '.properties.metadata | keys | join(", ")')"
-
-  # Try known property names
-  redirectUrl=$(echo "$getResponse" | jq -r '
+  local redirectUrl
+  redirectUrl=$(echo "$connectionResponse" | jq -r '
     .properties.metadata.redirectUrl //
     .properties.metadata.RedirectUrl //
     .properties.metadata.redirect_url //
     .properties.metadata.RedirectUri //
     .properties.redirectUrl //
-    .properties.credentials.redirectUrl //
-    .properties.credentials.RedirectUrl //
     empty' 2>/dev/null || true)
 
-  # Search metadata values for the consent URL pattern
   if [ -z "$redirectUrl" ]; then
+    echo "No redirectUrl found in PUT response. Fetching connection via GET..."
+    local getResponse
+    getResponse=$(az rest --method GET --url "$connectionUrl" -o json)
+
+    echo "  Connection metadata keys: $(echo "$getResponse" | jq -r '.properties.metadata | keys | join(", ")')"
+
     redirectUrl=$(echo "$getResponse" | jq -r '
-      [.properties.metadata | to_entries[] |
-       select(.value | type == "string" and startswith("https://global.consent.azure-apim.net/redirect/")) |
-       .value] | first // empty' 2>/dev/null || true)
-    if [ -n "$redirectUrl" ]; then
-      echo "  Found redirect URL in metadata: $redirectUrl"
+      .properties.metadata.redirectUrl //
+      .properties.metadata.RedirectUrl //
+      .properties.metadata.redirect_url //
+      .properties.metadata.RedirectUri //
+      .properties.redirectUrl //
+      .properties.credentials.redirectUrl //
+      .properties.credentials.RedirectUrl //
+      empty' 2>/dev/null || true)
+
+    if [ -z "$redirectUrl" ]; then
+      redirectUrl=$(echo "$getResponse" | jq -r '
+        [.properties.metadata | to_entries[] |
+         select(.value | type == "string" and startswith("https://global.consent.azure-apim.net/redirect/")) |
+         .value] | first // empty' 2>/dev/null || true)
+      if [ -n "$redirectUrl" ]; then
+        echo "  Found redirect URL in metadata: $redirectUrl"
+      fi
+    fi
+
+    if [ -z "$redirectUrl" ]; then
+      redirectUrl=$(echo "$getResponse" | jq -r '
+        [.properties | to_entries[] |
+         select(.value | type == "string" and startswith("https://global.consent.azure-apim.net/redirect/")) |
+         .value] | first // empty' 2>/dev/null || true)
+      if [ -n "$redirectUrl" ]; then
+        echo "  Found redirect URL in properties: $redirectUrl"
+      fi
+    fi
+
+    if [ -z "$redirectUrl" ]; then
+      echo "WARNING: Could not find redirect URL in any known property. Full response:" >&2
+      echo "$getResponse"
     fi
   fi
 
-  # Search top-level properties for the consent URL pattern
-  if [ -z "$redirectUrl" ]; then
-    redirectUrl=$(echo "$getResponse" | jq -r '
-      [.properties | to_entries[] |
-       select(.value | type == "string" and startswith("https://global.consent.azure-apim.net/redirect/")) |
-       .value] | first // empty' 2>/dev/null || true)
-    if [ -n "$redirectUrl" ]; then
-      echo "  Found redirect URL in properties: $redirectUrl"
+  if [ -n "$redirectUrl" ]; then
+    echo "Redirect URL from connection: $redirectUrl"
+
+    local existingUris
+    existingUris=$(az rest --method GET \
+      --url "https://graph.microsoft.com/v1.0/applications/${appObjectId}?\$select=web" \
+      --query "web.redirectUris" -o json)
+
+    local allUris
+    allUris=$(echo "$existingUris" | jq --arg new "$redirectUrl" '
+      [.[] | select(startswith("https://global.consent.azure-apim.net/redirect/") | not)] + [$new] | unique')
+
+    local needsUpdate
+    needsUpdate=$(jq -n --argjson existing "$existingUris" --argjson updated "$allUris" '
+      if ($existing | sort) == ($updated | sort) then "no" else "yes" end' -r)
+
+    if [ "$needsUpdate" = "no" ]; then
+      echo "Redirect URL already present in app registration. Skipping update."
+    else
+      echo "Updating app registration redirect URIs (replacing stale consent URI)..."
+      echo "  New URIs: $(echo "$allUris" | jq -r 'join(", ")')"
+
+      local patchPayload
+      patchPayload=$(jq -n --argjson uris "$allUris" '{"web":{"redirectUris":$uris}}')
+      local patchTmp
+      patchTmp=$(mktemp)
+      echo "$patchPayload" > "$patchTmp"
+
+      az rest --method PATCH \
+        --url "https://graph.microsoft.com/v1.0/applications/$appObjectId" \
+        --body "@$patchTmp" \
+        --headers "Content-Type=application/json" || {
+          echo "ERROR: Failed to update app registration with redirect URL." >&2
+          rm -f "$patchTmp"
+          return 1
+        }
+
+      rm -f "$patchTmp"
+      echo "App registration updated with redirect URL."
     fi
-  fi
-
-  # Last resort: dump full response for debugging
-  if [ -z "$redirectUrl" ]; then
-    echo "WARNING: Could not find redirect URL in any known property. Full response:" >&2
-    echo "$getResponse"
-  fi
-fi
-
-if [ -n "$redirectUrl" ]; then
-  echo "Redirect URL from connection: $redirectUrl"
-
-  # Get existing web redirect URIs via Graph REST API
-  existingUris=$(az rest --method GET \
-    --url "https://graph.microsoft.com/v1.0/applications/${appObjectId}?\$select=web" \
-    --query "web.redirectUris" -o json)
-
-  # Build new URI list: remove stale consent URIs, add current one, deduplicate
-  allUris=$(echo "$existingUris" | jq --arg new "$redirectUrl" '
-    [.[] | select(startswith("https://global.consent.azure-apim.net/redirect/") | not)] + [$new] | unique')
-
-  # Check if update is needed
-  needsUpdate=$(jq -n --argjson existing "$existingUris" --argjson updated "$allUris" '
-    if ($existing | sort) == ($updated | sort) then "no" else "yes" end' -r)
-
-  if [ "$needsUpdate" = "no" ]; then
-    echo "Redirect URL already present in app registration. Skipping update."
   else
-    echo "Updating app registration redirect URIs (replacing stale consent URI)..."
-    echo "  New URIs: $(echo "$allUris" | jq -r 'join(", ")')"
-
-    patchPayload=$(jq -n --argjson uris "$allUris" '{"web":{"redirectUris":$uris}}')
-    patchTmp=$(mktemp)
-    echo "$patchPayload" > "$patchTmp"
-
-    az rest --method PATCH \
-      --url "https://graph.microsoft.com/v1.0/applications/$appObjectId" \
-      --body "@$patchTmp" \
-      --headers "Content-Type=application/json" || {
-        echo "ERROR: Failed to update app registration with redirect URL." >&2
-        rm -f "$patchTmp"
-        exit 1
-      }
-
-    rm -f "$patchTmp"
-    echo "App registration updated with redirect URL."
+    echo "WARNING: Could not extract redirect URL from connection response. You may need to add it manually." >&2
   fi
-else
-  echo "WARNING: Could not extract redirect URL from connection response. You may need to add it manually." >&2
-fi
+}
+
+# --- Deploy Flight MCP connection ---
+deploy_connection \
+  "${FOUNDRY_CONNECTION_MCP_CLIENT_ID:?Missing FOUNDRY_CONNECTION_MCP_CLIENT_ID}" \
+  "${MCP_FLIGHT_WEBAPP_NAME:?Missing MCP_FLIGHT_WEBAPP_NAME}" \
+  "flightserver-mcp" \
+  "flight_reservation_information"
+
+# --- Deploy Hotel MCP connection ---
+deploy_connection \
+  "${FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID:?Missing FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID}" \
+  "${MCP_HOTEL_WEBAPP_NAME:?Missing MCP_HOTEL_WEBAPP_NAME}" \
+  "hotelserver-mcp" \
+  "hotel_reservation_information"
+
+echo ""
+echo "All Foundry MCP connections deployed successfully."

@@ -78,6 +78,7 @@ You do **not** need to create these manually — they are overwritten on every r
 | `FLIGHT_MCP_SERVER_CLIENT_ID` | Entra app ID for Flight MCP Server |
 | `HOTEL_MCP_SERVER_CLIENT_ID` | Entra app ID for Hotel MCP Server |
 | `FOUNDRY_CONNECTION_MCP_CLIENT_ID` | Entra app ID for Foundry MCP connection |
+| `FOUNDRY_CONNECTION_HOTEL_MCP_CLIENT_ID` | Entra app ID for Foundry Hotel MCP connection |
 | `MCP_FLIGHT_WEBAPP_NAME` | App Service name for Flight MCP |
 | `MCP_HOTEL_WEBAPP_NAME` | App Service name for Hotel MCP |
 | `AZURE_CONTAINER_REGISTRY_NAME` | ACR name |
