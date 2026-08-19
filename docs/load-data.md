@@ -6,7 +6,7 @@ After the infrastructure is deployed, seed the Cosmos DB database with sample fl
 
 ## What gets loaded
 
-![Load data pipeline](../images/load-data-pipeline.excalidraw)
+![Load data pipeline](../images/load-data-pipeline.png)
 
 The `utility/data_loader.py` script loads two JSON files from `data/` into the **ContosoAgency** Cosmos DB database:
 
