@@ -32,7 +32,7 @@ var networksConf = bringYourOwnResource == true
     ]
   : null
 
-resource foundry 'Microsoft.CognitiveServices/accounts@2026-01-15-preview' = {
+resource foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   name: foundryResourceName
   location: location
   kind: 'AIServices'
@@ -83,7 +83,7 @@ resource foundry 'Microsoft.CognitiveServices/accounts@2026-01-15-preview' = {
   }
 }
 
-resource connectionStorage 'Microsoft.CognitiveServices/accounts/connections@2026-01-15-preview' = if (bringYourOwnResource) {
+resource connectionStorage 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = if (bringYourOwnResource) {
   parent: foundry
   name: 'storage'
   properties: {
@@ -99,7 +99,7 @@ resource connectionStorage 'Microsoft.CognitiveServices/accounts/connections@202
   }
 }
 
-resource connectionSearch 'Microsoft.CognitiveServices/accounts/connections@2026-01-15-preview' = if (bringYourOwnResource) {
+resource connectionSearch 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = if (bringYourOwnResource) {
   parent: foundry
   name: 'aiSearch'
   properties: {
@@ -115,7 +115,7 @@ resource connectionSearch 'Microsoft.CognitiveServices/accounts/connections@2026
   }
 }
 
-resource connectionCosmos 'Microsoft.CognitiveServices/accounts/connections@2026-01-15-preview' = if (bringYourOwnResource) {
+resource connectionCosmos 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = if (bringYourOwnResource) {
   parent: foundry
   name: 'cosmos'
   properties: {

@@ -4,11 +4,11 @@ param connectionSearchName string
 param connectionCosmosName string
 param connectionStorageName string
 
-resource foundry 'Microsoft.CognitiveServices/accounts@2026-01-15-preview' existing = {
+resource foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
   name: foundryResourceName
 }
 
-resource project 'Microsoft.CognitiveServices/accounts/projects@2026-01-15-preview' existing = {
+resource project 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' existing = {
   parent: foundry
   name: projectName
 }
