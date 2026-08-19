@@ -56,30 +56,32 @@ resource foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
     }
     networkInjections: networksConf
   }
+}
 
-  resource project 'projects' = {
-    name: '${foundryResourceName}-travel-planner'
-    location: location
-    identity: {
-      type: 'SystemAssigned'
-    }
-    properties: {
-      displayName: 'Travel Planner'
-      description: 'Travel Planner multi agents end to end'
-    }
+resource project 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
+  parent: foundry
+  name: '${foundryResourceName}-travel-planner'
+  location: location
+  identity: {
+    type: 'SystemAssigned'
   }
+  properties: {
+    displayName: 'Travel Planner'
+    description: 'Travel Planner multi agents end to end'
+  }
+}
 
-  resource chatModelDeployment 'deployments' = {
-    name: chatModelParameters.modelProperties.name
-    sku: {
-      name: chatModelParameters.sku.name
-      capacity: chatModelParameters.sku.capacity
-    }
-    properties: {
-      model: chatModelParameters.modelProperties
-      versionUpgradeOption: chatModelParameters.versionUpgradeOption
-      currentCapacity: chatModelParameters.sku.capacity
-    }
+resource chatModelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = {
+  parent: foundry
+  name: chatModelParameters.modelProperties.name
+  sku: {
+    name: chatModelParameters.sku.name
+    capacity: chatModelParameters.sku.capacity
+  }
+  properties: {
+    model: chatModelParameters.modelProperties
+    versionUpgradeOption: chatModelParameters.versionUpgradeOption
+    currentCapacity: chatModelParameters.sku.capacity
   }
 }
 
@@ -134,11 +136,11 @@ resource connectionCosmos 'Microsoft.CognitiveServices/accounts/connections@2025
 output foundryResourceName string = foundry.name
 output foundryResourceId string = foundry.id
 output foundryIdentityPrincipalId string = foundry.identity.principalId
-output projectName string = foundry::project.name
-output modelName string = foundry::chatModelDeployment.name
-output projectPrincipalId string = foundry::project.identity.principalId
+output projectName string = project.name
+output modelName string = chatModelDeployment.name
+output projectPrincipalId string = project.identity.principalId
 #disable-next-line BCP053
-output projectWorkspaceId string = foundry::project.properties.internalId
+output projectWorkspaceId string = project.properties.internalId
 output connectionSearchName string = bringYourOwnResource == true ? connectionSearch.name : ''
 output connectionCosmosName string = bringYourOwnResource == true ? connectionCosmos.name : ''
 output connectionStorageName string = bringYourOwnResource == true ? connectionStorage.name : ''
