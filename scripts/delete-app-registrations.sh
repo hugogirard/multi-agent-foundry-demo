@@ -21,6 +21,7 @@ appDisplayNames=(
     "Front-End Chatbot Trip Reservation"
     "Foundry MCP Flight Server"
     "Conversation API"
+    "Hotel MCP Server"
     "Flight MCP Server"
 )
 

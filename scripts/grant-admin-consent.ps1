@@ -148,9 +148,18 @@ if (-not $foundryMcpClientId) {
 }
 Write-Host "  Foundry MCP Flight Server Client ID: $foundryMcpClientId"
 
+Write-Host "Looking up Hotel MCP Server app registration..."
+$hotelMcpClientId = if ($env:HOTEL_MCP_SERVER_CLIENT_ID) { $env:HOTEL_MCP_SERVER_CLIENT_ID } else { azd env get-value HOTEL_MCP_SERVER_CLIENT_ID }
+if (-not $hotelMcpClientId) {
+    Write-Error "Could not read HOTEL_MCP_SERVER_CLIENT_ID from env or azd env."
+    exit 1
+}
+Write-Host "  Hotel MCP Server Client ID: $hotelMcpClientId"
+
 # --- Grant admin consent for each app ---
 
 Grant-AdminConsentViaGraph -AppId $mcpClientId         -Label "Flight MCP Server"
+Grant-AdminConsentViaGraph -AppId $hotelMcpClientId    -Label "Hotel MCP Server"
 Grant-AdminConsentViaGraph -AppId $foundryMcpClientId   -Label "Foundry MCP Flight Server"
 Grant-AdminConsentViaGraph -AppId $conversationApiClientId    -Label "Conversation API"
 Grant-AdminConsentViaGraph -AppId $openApiClientId      -Label "OpenAPI"
