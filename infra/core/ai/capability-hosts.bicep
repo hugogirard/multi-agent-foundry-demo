@@ -13,15 +13,7 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-previ
   name: projectName
 }
 
-resource accountCapabilityHost 'Microsoft.CognitiveServices/accounts/capabilityHosts@2025-04-01-preview' = {
-  name: 'account-capability-host'
-  parent: foundry
-  properties: {
-    #disable-next-line BCP037
-    capabilityHostKind: 'Agents'
-  }
-}
-
+// Account-level capability host is auto-created by networkInjections on the Foundry account
 resource projectCapabilityHost 'Microsoft.CognitiveServices/accounts/projects/capabilityHosts@2025-04-01-preview' = {
   name: 'project-capability-host'
   parent: project
@@ -38,9 +30,6 @@ resource projectCapabilityHost 'Microsoft.CognitiveServices/accounts/projects/ca
       connectionCosmosName
     ]
   }
-  dependsOn: [
-    accountCapabilityHost
-  ]
 }
 
 // Project-level capability host — the account-level cap host is auto-created
