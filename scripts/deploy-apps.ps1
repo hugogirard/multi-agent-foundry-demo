@@ -171,6 +171,66 @@ Restart-WebApp -ResourceGroup $resourceGroup -WebAppName $webAppName
 Write-Host "MCP Flight Server deployment complete."
 
 # ============================================================
+# PART 1.5 — MCP Hotel Server
+# ============================================================
+
+Write-Host "`n========== Deploying MCP Hotel Server ==========`n"
+
+$clientId = azd env get-value HOTEL_MCP_SERVER_CLIENT_ID
+$resourceGroup = azd env get-value AZURE_RESOURCE_GROUP
+$webAppName = azd env get-value MCP_HOTEL_WEBAPP_NAME
+$acrName = azd env get-value AZURE_CONTAINER_REGISTRY_NAME
+
+$acrEndpoint = "${acrName}.azurecr.io"
+$imageName = "${acrEndpoint}/mcp-hotel-server:latest"
+
+Write-Host "Client ID: $clientId"
+Write-Host "Resource Group: $resourceGroup"
+Write-Host "Web App Name: $webAppName"
+Write-Host "ACR Name: $acrName"
+Write-Host "Image: $imageName"
+
+# --- Build and push Docker image to ACR ---
+
+Write-Host "Building image: mcp-hotel-server:latest ..."
+docker build -t $imageName "$PSScriptRoot/../src/mcp/hotel-server"
+
+Write-Host "Pushing image to ACR: $acrName ..."
+docker push $imageName
+
+# --- Configure Web App to use the ACR image ---
+
+Write-Host "Configuring Web App: $webAppName to use image $imageName ..."
+Set-WebAppContainerImage -ResourceGroup $resourceGroup -WebAppName $webAppName -ImageName $imageName -AcrEndpoint $acrEndpoint
+
+# --- Create app registration secret via Graph API ---
+
+Write-Host "Creating new 'Azure Secret' credential..."
+$secretValue = Add-AppSecret -AppId $clientId -SecretName "Azure Secret"
+
+if (-not $secretValue) {
+    Write-Error "Failed to create app registration secret."
+    exit 1
+}
+
+Write-Host "Secret created successfully."
+
+# --- Set app settings on the Web App ---
+
+Write-Host "Setting app settings on $webAppName..."
+Set-WebAppSettings -ResourceGroup $resourceGroup -WebAppName $webAppName -Settings @{
+    ENTRA_CLIENT_ID     = $clientId
+    ENTRA_CLIENT_SECRET = $secretValue
+}
+
+# --- Restart the Web App ---
+
+Write-Host "Restarting Web App: $webAppName ..."
+Restart-WebApp -ResourceGroup $resourceGroup -WebAppName $webAppName
+
+Write-Host "MCP Hotel Server deployment complete."
+
+# ============================================================
 # PART 2 — Flight Agent API
 # ============================================================
 
